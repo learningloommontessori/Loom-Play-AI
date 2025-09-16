@@ -43,7 +43,7 @@ async function generateImageWithClipDrop(prompt) {
 }
 
 // This is your main API endpoint
-app.post('/api/server', async (req, res) => {
+app.post('/', async (req, res) => {
     try {
         // --- 1. SECURITY CHECK ---
         const token = req.headers.authorization?.split(' ')[1];
