@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Learning Loom AI - Generated Content</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .active-tab {
+            border-bottom: 3px solid #A855F7;
+            color: #ffffff;
+            background-color: rgba(168, 85, 247, 0.2);
+        }
+        .tab-content {
+            display: none;
+        }
+        .active-tab-content {
+            display: block;
+        }
+        .active-tag {
+            background-color: #A855F7;
+            color: white;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+<div class="relative min-h-screen flex flex-col">
+<div class="absolute inset-0">
+<img alt="Abstract purple and blue waves on a black background" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAZu9QWRIEFnKKG6SMF74gPyyMfKcVyImI8TeqE1aWnAEy17Z3Ob2KGfLCIeZhHwB3m8sldZ1JAvfz-y5wpsgDaZBSRb6S0wGB7p4XJL3VQ2JsWLB9gz3iT3yeNwq-tNnZaFJxCUbLxoqWIsjBrpFCc0ZdkKon35yRcmiw-mgn98WRAe4u-dsImTEuWVOqThZVmtgidaXz8oNaw_j2UG7odXaYWTgDIAYkh0fnLndUDkSH7Ho0BSd03oOllL7bpSfju2Yxnxa_HiMs"/>
+<div class="absolute inset-0 bg-black opacity-50"></div>
+</div>
+<header class="relative px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+<h1 class="text-2xl font-bold">Learning Loom AI</h1>
+<div class="flex items-center">
+<span class="mr-4">Welcome, User!</span>
+<button class="mr-4 text-white">
+<span class="material-symbols-outlined text-4xl">
+                    account_circle
+                </span>
+</button>
+<button class="bg-transparent hover:bg-purple-700 text-white font-semibold py-2 px-4 border border-white hover:border-transparent rounded-md transition duration-300">
+                Exit the Loom
+            </button>
+</div>
+</header>
+<main class="relative flex-grow flex flex-col items-center px-4 sm:px-6 lg:px-8 py-8">
+<div class="w-full max-w-7xl bg-black/30 backdrop-blur-sm p-8 rounded-lg">
+<div class="border-b border-gray-700">
+<nav aria-label="Tabs" class="-mb-px flex space-x-2 overflow-x-auto">
+<a class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg active-tab flex items-center rounded-t-lg transition-all duration-300" data-tab="story" href="#"><span class="material-symbols-outlined mr-2">auto_stories</span>Story &amp; Rhyme Time</a>
+<a class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg text-gray-400 hover:text-white hover:border-purple-400 hover:bg-purple-900/30 flex items-center rounded-t-lg transition-all duration-300" data-tab="hands-on" href="#"><span class="material-symbols-outlined mr-2">pan_tool</span>Hands-On Activities</a>
+<a class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg text-gray-400 hover:text-white hover:border-purple-400 hover:bg-purple-900/30 flex items-center rounded-t-lg transition-all duration-300" data-tab="movement" href="#"><span class="material-symbols-outlined mr-2">sports_gymnastics</span>Movement &amp; Music</a>
+<a class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg text-gray-400 hover:text-white hover:border-purple-400 hover:bg-purple-900/30 flex items-center rounded-t-lg transition-all duration-300" data-tab="exploration" href="#"><span class="material-symbols-outlined mr-2">eco</span>Exploration &amp; Discovery</a>
+<a class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg text-gray-400 hover:text-white hover:border-purple-400 hover:bg-purple-900/30 flex items-center rounded-t-lg transition-all duration-300" data-tab="printables" href="#"><span class="material-symbols-outlined mr-2">print</span>Printables &amp; Resources</a>
+<a class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg text-gray-400 hover:text-white hover:border-purple-400 hover:bg-purple-900/30 flex items-center rounded-t-lg transition-all duration-300" data-tab="parent" href="#"><span class="material-symbols-outlined mr-2">family_restroom</span>Parent Partnership</a>
+<a class="whitespace-nowrap py-4 px-4 border-b-2 font-bold text-lg text-gray-400 hover:text-white hover:border-purple-400 hover:bg-purple-900/30 flex items-center rounded-t-lg transition-all duration-300" data-tab="teacher" href="#"><span class="material-symbols-outlined mr-2">school</span>Teacher's Corner</a>
+</nav>
+</div>
+<div class="mt-8">
+<div class="tab-content active-tab-content" id="story-content">
+<div class="flex items-center justify-between mb-6">
+<div class="flex space-x-3">
+<span class="bg-purple-800/50 text-purple-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-purple-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5 active-tag">Learning Story</span>
+<span class="bg-purple-800/50 text-purple-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-purple-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Rhyme</span>
+<span class="bg-purple-800/50 text-purple-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-purple-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Key Vocabulary</span>
+</div>
+<div class="flex items-center space-x-3 ml-4">
+<button class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">description</span>
+                                Word
+                            </button>
+<button class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">groups</span>
+                                Community Hub
+                            </button>
+</div>
+</div>
+<h3 class="text-3xl font-bold mb-4">Lesson: The Solar System</h3>
+<div class="space-y-6 text-lg leading-relaxed">
+</div>
+</div>
+<div class="tab-content" id="hands-on-content">
+<div class="flex items-center justify-between mb-6">
+<div class="flex space-x-3">
+<span class="bg-blue-800/50 text-blue-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Practical Life</span>
+<span class="bg-blue-800/50 text-blue-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Sensorial</span>
+<span class="bg-blue-800/50 text-blue-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-blue-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Art &amp; Craft</span>
+</div>
+<div class="flex items-center space-x-3 ml-4">
+<button class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">description</span>
+                                Word
+                            </button>
+<button class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">groups</span>
+                                Community Hub
+                            </button>
+</div>
+</div>
+<h3 class="text-3xl font-bold mb-4">Hands-On Activities</h3>
+<p>Content for Hands-On Activities...</p>
+</div>
+<div class="tab-content" id="movement-content">
+<div class="flex items-center justify-between mb-6">
+<div class="flex space-x-3">
+<span class="bg-green-800/50 text-green-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-green-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Gross Motor</span>
+<span class="bg-green-800/50 text-green-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-green-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Fine Motor</span>
+<span class="bg-green-800/50 text-green-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-green-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Action Song</span>
+</div>
+<div class="flex items-center space-x-3 ml-4">
+<button class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">description</span>
+                                Word
+                            </button>
+<button class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">groups</span>
+                                Community Hub
+                            </button>
+</div>
+</div>
+<h3 class="text-3xl font-bold mb-4">Movement &amp; Music</h3>
+<p>Content for Movement &amp; Music...</p>
+</div>
+<div class="tab-content" id="exploration-content">
+<div class="flex items-center justify-between mb-6">
+<div class="flex space-x-3">
+<span class="bg-yellow-800/50 text-yellow-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-yellow-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Nature Connection</span>
+<span class="bg-yellow-800/50 text-yellow-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-yellow-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Simple Experiment</span>
+<span class="bg-yellow-800/50 text-yellow-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-yellow-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Grace &amp; Courtesy</span>
+</div>
+<div class="flex items-center space-x-3 ml-4">
+<button class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">description</span>
+                                Word
+                            </button>
+<button class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">groups</span>
+                                Community Hub
+                            </button>
+</div>
+</div>
+<h3 class="text-3xl font-bold mb-4">Exploration &amp; Discovery</h3>
+<p>Content for Exploration &amp; Discovery...</p>
+</div>
+<div class="tab-content" id="printables-content">
+<div class="flex items-center justify-between mb-6">
+<div class="flex space-x-3">
+<span class="bg-indigo-800/50 text-indigo-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-indigo-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Worksheet Idea</span>
+<span class="bg-indigo-800/50 text-indigo-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-indigo-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">3-Part Cards</span>
+<span class="bg-indigo-800/50 text-indigo-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-indigo-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Video Links</span>
+</div>
+<div class="flex items-center space-x-3 ml-4">
+<button class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">description</span>
+                                Word
+                            </button>
+<button class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">groups</span>
+                                Community Hub
+                            </button>
+</div>
+</div>
+<h3 class="text-3xl font-bold mb-4">Printables &amp; Resources</h3>
+<p>Content for Printables &amp; Resources...</p>
+</div>
+<div class="tab-content" id="parent-content">
+<div class="flex items-center justify-between mb-6">
+<div class="flex space-x-3">
+<span class="bg-pink-800/50 text-pink-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-pink-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Home Connection</span>
+<span class="bg-pink-800/50 text-pink-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-pink-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Conversation Starters</span>
+<span class="bg-pink-800/50 text-pink-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-pink-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Weekend Project Idea</span>
+</div>
+<div class="flex items-center space-x-3 ml-4">
+<button class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">description</span>
+                                Word
+                            </button>
+<button class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">groups</span>
+                                Community Hub
+                            </button>
+</div>
+</div>
+<h3 class="text-3xl font-bold mb-4">Parent Partnership</h3>
+<p>Content for Parent Partnership...</p>
+</div>
+<div class="tab-content" id="teacher-content">
+<div class="flex items-center justify-between mb-6">
+<div class="flex space-x-3">
+<span class="bg-red-800/50 text-red-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-red-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Observation Cues</span>
+<span class="bg-red-800/50 text-red-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-red-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Environment Setup</span>
+<span class="bg-red-800/50 text-red-200 text-base font-semibold px-4 py-2 rounded-full cursor-pointer transition-all duration-300 hover:bg-red-700 hover:text-white hover:shadow-lg hover:-translate-y-0.5">Montessori Concept</span>
+</div>
+<div class="flex items-center space-x-3 ml-4">
+<button class="flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">description</span>
+                                Word
+                            </button>
+<button class="flex items-center bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+<span class="material-symbols-outlined mr-2">groups</span>
+                                Community Hub
+                            </button>
+</div>
+</div>
+<h3 class="text-3xl font-bold mb-4">Teacher's Corner</h3>
+<p>Content for Teacher's Corner...</p>
+</div>
+</div>
+</div>
+</main>
+<footer class="relative w-full py-4 px-4 sm:px-6 lg:px-8 mt-auto">
+<div class="flex justify-between items-center">
+<p class="text-sm text-gray-300">Threads of wisdom may tangle—<span class="font-bold text-white underline">verify before you use.</span></p>
+<p class="text-sm text-gray-300">Made By : Monika Pathak</p>
+</div>
+</footer>
+</div>
+<script>
+        const tabs = document.querySelectorAll('nav[aria-label="Tabs"] a');
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                tabs.forEach(item => {
+                    item.classList.remove('active-tab');
+                    item.classList.add('text-gray-400', 'hover:text-white', 'hover:border-purple-400', 'hover:bg-purple-900/30');
+                });
+                tab.classList.add('active-tab');
+                tab.classList.remove('text-gray-400', 'hover:text-white', 'hover:border-purple-400', 'hover:bg-purple-900/30');
+                const tabId = tab.dataset.tab;
+                tabContents.forEach(content => {
+                    content.classList.remove('active-tab-content');
+                });
+                document.getElementById(`${tabId}-content`).classList.add('active-tab-content');
+            });
+        });
+        const contentTags = document.querySelectorAll('.tab-content .flex.space-x-3 span');
+        contentTags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                // Find the parent container of the clicked tag
+                const tagContainer = tag.parentElement;
+                // Get all tags within that container
+                const tagsInContainer = tagContainer.querySelectorAll('span');
+                // Remove active-tag class from all tags in the same container
+                tagsInContainer.forEach(t => {
+                    t.classList.remove('active-tag');
+                });
+                // Add active-tag class to the clicked tag
+                tag.classList.add('active-tag');
+            });
+        });
+    </script>
+</body></html>
