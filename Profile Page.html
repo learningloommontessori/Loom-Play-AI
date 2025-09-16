@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"/>
@@ -101,4 +102,109 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <script src="js/main.js"></script>
     </body>
+=======
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Learning Loom AI - User Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+<div class="relative min-h-screen">
+<div class="absolute inset-0">
+<img alt="Abstract purple and blue waves on a black background" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAZu9QWRIEFnKKG6SMF74gPyyMfKcVyImI8TeqE1aWnAEy17Z3Ob2KGfLCIeZhHwB3m8sldZ1JAvfz-y5wpsgDaZBSRb6S0wGB7p4XJL3VQ2JsWLB9gz3iT3yeNwq-tNnZaFJxCUbLxoqWIsjBrpFCc0ZdkKon35yRcmiw-mgn98WRAe4u-dsImTEuWVOqThZVmtgidaXz8oNaw_j2UG7odXaYWTgDIAYkh0fnLndUDkSH7Ho0BSd03oOllL7bpSfju2Yxnxa_HiMs"/>
+<div class="absolute inset-0 bg-black opacity-50"></div>
+</div>
+<header class="relative px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+<h1 class="text-2xl font-bold">Learning Loom AI</h1>
+<div class="flex items-center">
+<a class="mr-4 text-white flex items-center" href="#">
+<span class="material-symbols-outlined mr-2">home</span>
+                    My Loom
+                </a>
+<button class="bg-transparent hover:bg-purple-700 text-white font-semibold py-2 px-4 border border-white hover:border-transparent rounded-md transition duration-300" id="logoutButton">
+                    Exit the Loom
+                </button>
+</div>
+</header>
+<main class="relative flex flex-col items-center min-h-[calc(100vh-12rem)] px-4 sm:px-6 lg:px-8 py-8">
+<div class="w-full max-w-4xl bg-black/30 backdrop-blur-sm p-8 rounded-lg">
+<div class="flex flex-col md:flex-row items-center md:items-start text-center md:text-left">
+<div class="relative mb-4 md:mb-0 md:mr-8">
+<img alt="User Profile Picture" class="w-32 h-32 rounded-full ring-4 ring-purple-500" src="https://lh3.googleusercontent.com/a/ACg8ocK_3_A7m3yQyS_L5V3p_Cg_Gq9q_sLg-2jKzX5ZzQY=s96-c"/>
+<button class="absolute bottom-0 right-0 bg-purple-600 hover:bg-purple-700 p-2 rounded-full text-white">
+<span class="material-symbols-outlined">
+                                edit
+                            </span>
+</button>
+</div>
+<div class="flex-1">
+<h2 class="text-4xl font-bold">Alex Doe</h2>
+<p class="text-purple-300 mt-1">alex.doe@example.com</p>
+<p class="mt-4 text-gray-300 max-w-prose">
+                            Passionate early childhood educator with over 10 years of experience in creating engaging and developmentally appropriate learning experiences.
+                        </p>
+</div>
+</div>
+<div class="mt-10 border-t border-gray-700 pt-8">
+<h3 class="text-2xl font-bold mb-6">Profile Settings</h3>
+<form action="#" method="POST">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+<label class="block text-sm font-medium text-gray-300" for="full_name">Full Name</label>
+<input class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" id="full_name" name="full_name" type="text" value="Alex Doe"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-300" for="email">Email Address</label>
+<input class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" id="email" name="email" type="email" value="alex.doe@example.com"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-300" for="role">Role</label>
+<input class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" id="role" name="role" type="text" value="Teacher"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-gray-300" for="member_since">Member Since</label>
+<p class="mt-1 text-white sm:text-sm py-2 px-3">January 15, 2023</p>
+</div>
+<div class="md:col-span-2">
+<label class="block text-sm font-medium text-gray-300" for="bio">Bio</label>
+<textarea class="mt-1 block w-full bg-gray-800 border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm" id="bio" name="bio" rows="3">Passionate early childhood educator with over 10 years of experience in creating engaging and developmentally appropriate learning experiences.</textarea>
+</div>
+</div>
+<div class="mt-8 flex justify-between items-center">
+<div>
+<button class="bg-transparent hover:bg-purple-700 text-white font-semibold py-2 px-4 border border-white hover:border-transparent rounded-md transition duration-300" type="button">
+                                    Change Password
+                                </button>
+</div>
+<div class="flex space-x-4">
+<button class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300" type="button">
+                                    Cancel
+                                </button>
+<button class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300" type="submit">
+                                    Save Changes
+                                </button>
+</div>
+</div>
+</form>
+</div>
+</div>
+</main>
+<footer class="relative w-full text-right py-4 px-4 sm:px-6 lg:px-8">
+<p class="text-sm text-gray-400">Made By: Monika Pathak</p>
+</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="js/main.js"></script>
+    </body>
+>>>>>>> b6d6e5e868a9976745a2e992b94117e837f71788
 </html>
