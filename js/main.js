@@ -81,7 +81,7 @@ if (generatorForm) {
 
         try {
             // Call your Vercel backend function
-            const response = await fetch('/api/server', {
+            const response = await fetch('/api', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
