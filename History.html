@@ -2,16 +2,13 @@
 <html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Learning Loom AI - Past Interactions (Grid View)</title>
+<title>Loom Play AI - History</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
 <style type="text/tailwindcss">
         body {
             font-family: 'Roboto', sans-serif;
-        }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
         }
     </style>
 </head>
@@ -22,137 +19,88 @@
 <div class="absolute inset-0 bg-black opacity-50"></div>
 </div>
 <header class="relative px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-<h1 class="text-2xl font-bold">Learning Loom AI</h1>
+<div class="flex items-center space-x-4">
+<!-- Main Navigation Menu -->
+<div class="relative" x-data="{ open: false }">
+<button @click="open = !open" class="text-white focus:outline-none" aria-label="Main Menu">
+<span class="material-symbols-outlined text-4xl hover:text-purple-300 transition-colors">menu</span>
+</button>
+<div @click.away="open = false" class="absolute left-0 mt-2 w-64 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-10" style="display: none;" x-show="open">
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Dashboard.html">
+<span class="material-symbols-outlined mr-3">dashboard</span> Dashboard
+                            </a>
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/History.html">
+<span class="material-symbols-outlined mr-3">history</span> Threads of the Past
+                            </a>
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Community Hub.html">
+<span class="material-symbols-outlined mr-3">groups</span> The Collective Loom
+                            </a>
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/New Chat.html">
+<span class="material-symbols-outlined mr-3">add</span> Weave a New Lesson
+                            </a>
+</div>
+</div>
+<a href="/Dashboard.html" class="text-2xl font-bold">Loom Play AI</a>
+</div>
 <div class="flex items-center">
 <div class="relative" x-data="{ open: false }">
-<button @click="open = !open" class="flex items-center space-x-2">
-<img alt="User avatar" class="w-10 h-10 rounded-full border-2 border-transparent hover:border-purple-400 transition" src="https://lh3.googleusercontent.com/a/ACg8ocK_1e-x_bYwWJ44X4jP-JqY1sJ_Y8f3gZ0wZ6U-yJk=s96-c"/>
+<button @click="open = !open" class="flex items-center space-x-2 focus:outline-none">
+<span id="welcome-message" class="hidden sm:inline mr-2 text-gray-300">Welcome, User!</span>
+<span class="material-symbols-outlined text-4xl text-white hover:text-purple-300 transition-colors">account_circle</span>
 </button>
-<div @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-10" style="display: none;" x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-end="opacity-100 transform scale-100" x-transition:enter-start="opacity-0 transform scale-95" x-transition:leave="transition ease-in duration-75" x-transition:leave-end="opacity-0 transform scale-95" x-transition:leave-start="opacity-100 transform scale-100">
-<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="#">
-<span class="material-symbols-outlined mr-2">account_circle</span> The Weaver
+<div @click.away="open = false" class="absolute right-0 mt-2 w-56 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-10" style="display: none;" x-show="open">
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Profile.html">
+<span class="material-symbols-outlined mr-3">account_circle</span> The Weaver
                         </a>
-<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="#">
-<span class="material-symbols-outlined mr-2"> Logout </span> Exit the Loom
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Change Password.html">
+<span class="material-symbols-outlined mr-3">password</span> Twist a Stronger Cord
                         </a>
+<button class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" id="logoutButton">
+<span class="material-symbols-outlined mr-3">logout</span> Exit the Loom
+                        </button>
 </div>
 </div>
 </div>
 </header>
 <main class="relative px-4 sm:px-6 lg:px-8 py-8 flex-grow">
 <div class="max-w-7xl mx-auto">
-<div class="flex flex-wrap justify-between items-center mb-6 gap-4">
-<h2 class="text-3xl font-bold tracking-tight text-white">The Patterns You’ve Created</h2>
-<div class="flex items-center space-x-4">
-<div class="relative hidden md:block">
-<input class="w-full pl-10 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="search-header" name="search-header" placeholder="Seek a memory in the loom…" type="search"/>
-<span class="absolute inset-y-0 left-0 flex items-center pl-3">
-<span class="material-symbols-outlined text-gray-400">search</span>
-</span>
+<div class="flex flex-wrap justify-between items-center mb-8 gap-4">
+<div>
+<h2 class="text-3xl font-bold tracking-tight text-white">Your Woven Lessons</h2>
+<p class="text-gray-400 mt-1">Review, share, or delete your previously generated lesson plans.</p>
 </div>
-<div class="flex items-center bg-black/30 border border-gray-600 rounded-md">
-<button class="p-2 text-white bg-purple-600 rounded-l-md">
-<span class="material-symbols-outlined">grid_view</span>
-</button>
-<button class="p-2 text-gray-400 hover:text-white transition-colors duration-200 rounded-r-md">
-<span class="material-symbols-outlined">view_list</span>
-</button>
+<a href="/New Chat.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300 flex items-center">
+<span class="material-symbols-outlined mr-2">add</span> Weave a New Lesson
+                    </a>
 </div>
+
+<!-- Search and Filter -->
+<div class="mb-6">
+    <div class="relative">
+        <input class="w-full pl-10 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" id="search-input" placeholder="Search your lessons by topic..." type="search"/>
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+            <span class="material-symbols-outlined text-gray-400">search</span>
+        </span>
+    </div>
 </div>
-</div>
-<div class="mb-6 bg-black/30 backdrop-blur-sm rounded-lg p-4 md:hidden">
-<div class="relative">
-<input class="w-full pl-10 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="search" name="search" placeholder="Seek a memory in the loom…" type="search"/>
-<span class="absolute inset-y-0 left-0 flex items-center pl-3">
-<span class="material-symbols-outlined text-gray-400">search</span>
-</span>
-</div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-<div class="bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden group flex flex-col justify-between hover:bg-black/40 transition-colors duration-300">
-<div class="p-6 flex-grow">
-<h3 class="text-xl font-semibold text-white mb-2">Introduction to Photosynthesis</h3>
-<p class="text-gray-400 text-sm mb-3 line-clamp-2">Explored the chemical process of photosynthesis, including the light-dependent and light-independent reactions.</p>
-<span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2 py-1 rounded-full mb-3">Biology</span>
-</div>
-<div class="px-6 pb-4 pt-2">
-<p class="text-gray-400 text-sm">October 26, 2023, 3:45 PM</p>
-</div>
-<div class="p-4 bg-black/20 flex justify-end items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">edit</span>
-</button>
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">share</span>
-</button>
-<button class="text-gray-400 hover:text-red-500">
-<span class="material-symbols-outlined text-base">delete</span>
-</button>
-</div>
-</div>
-<div class="bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden group flex flex-col justify-between hover:bg-black/40 transition-colors duration-300">
-<div class="p-6 flex-grow">
-<h3 class="text-xl font-semibold text-white mb-2">The American Revolution</h3>
-<p class="text-gray-400 text-sm mb-3 line-clamp-2">A deep dive into the key events, figures, and causes of the American Revolutionary War.</p>
-<span class="inline-block bg-blue-600/50 text-blue-200 text-xs font-medium px-2 py-1 rounded-full mb-3">History</span>
-</div>
-<div class="px-6 pb-4 pt-2">
-<p class="text-gray-400 text-sm">October 21, 2023, 11:20 AM</p>
-</div>
-<div class="p-4 bg-black/20 flex justify-end items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">edit</span>
-</button>
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">share</span>
-</button>
-<button class="text-gray-400 hover:text-red-500">
-<span class="material-symbols-outlined text-base">delete</span>
-</button>
-</div>
-</div>
-<div class="bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden group flex flex-col justify-between hover:bg-black/40 transition-colors duration-300">
-<div class="p-6 flex-grow">
-<h3 class="text-xl font-semibold text-white mb-2">Shakespeare's Sonnets</h3>
-<p class="text-gray-400 text-sm mb-3 line-clamp-2">Analyzed the structure, themes, and language of several of Shakespeare's most famous sonnets.</p>
-<span class="inline-block bg-green-600/50 text-green-200 text-xs font-medium px-2 py-1 rounded-full mb-3">Literature</span>
-</div>
-<div class="px-6 pb-4 pt-2">
-<p class="text-gray-400 text-sm">October 5, 2023, 9:00 AM</p>
-</div>
-<div class="p-4 bg-black/20 flex justify-end items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">edit</span>
-</button>
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">share</span>
-</button>
-<button class="text-gray-400 hover:text-red-500">
-<span class="material-symbols-outlined text-base">delete</span>
-</button>
-</div>
-</div>
-<div class="bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden group flex flex-col justify-between hover:bg-black/40 transition-colors duration-300">
-<div class="p-6 flex-grow">
-<h3 class="text-xl font-semibold text-white mb-2">Algebra Basics: Solving Equations</h3>
-<p class="text-gray-400 text-sm mb-3 line-clamp-2">Covered fundamental algebraic concepts, focusing on methods for solving linear equations.</p>
-<span class="inline-block bg-yellow-600/50 text-yellow-200 text-xs font-medium px-2 py-1 rounded-full mb-3">Mathematics</span>
-</div>
-<div class="px-6 pb-4 pt-2">
-<p class="text-gray-400 text-sm">September 28, 2023, 6:15 PM</p>
-</div>
-<div class="p-4 bg-black/20 flex justify-end items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">edit</span>
-</button>
-<button class="text-gray-400 hover:text-white">
-<span class="material-symbols-outlined text-base">share</span>
-</button>
-<button class="text-gray-400 hover:text-red-500">
-<span class="material-symbols-outlined text-base">delete</span>
-</button>
-</div>
-</div>
+
+<!-- History Grid -->
+<div id="history-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <!-- Loading State -->
+    <div id="loader" class="col-span-full flex flex-col items-center justify-center h-64">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+        <p class="mt-4 text-lg">Weaving your history...</p>
+    </div>
+    <!-- Empty State -->
+    <div id="empty-state" class="col-span-full flex-col items-center justify-center h-64 hidden">
+        <span class="material-symbols-outlined text-7xl text-gray-500">history_edu</span>
+        <h3 class="text-2xl font-bold mt-4">No Lessons Yet</h3>
+        <p class="text-gray-400 mt-2">Start a new chat to weave your first lesson plan.</p>
+        <a href="/New Chat.html" class="mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300">
+            Create a New Lesson
+        </a>
+    </div>
+    <!-- Lesson cards will be dynamically inserted here -->
 </div>
 </div>
 </main>
@@ -160,9 +108,14 @@
 <p class="text-sm text-gray-400">Made By: Monika Pathak</p>
 </footer>
 </div>
-<script defer="" src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-        <script src="js/main.js"></script>
-    </body>
+<script src="js/history.js"></script>
+</body>
 </html>
+
+
+
+
+
+

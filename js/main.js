@@ -1,143 +1,267 @@
-// js/main.js
+// This single script handles authentication for both Sign In and Sign Up pages.
+document.addEventListener('DOMContentLoaded', () => {
 
-const SUPABASE_URL = 'https://ioafdumlvvrhofmtngpa.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlvYWZkdW1sdnZyaG9mbXRuZ3BhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5OTgzMzUsImV4cCI6MjA3MzU3NDMzNX0.7j94j6nJeGwUBKl2S0LUzQ15nW6cCA_NNnF7ZRTRGc0';
+    // --- SUPABASE INITIALIZATION ---
+    // Make sure to replace these with your actual Supabase URL and Key
+    import supabase from './supabaseClient.js';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase client initialized.');
 
 
-// --- User Authentication Logic ---
+    /**
+     * Hides all feedback messages on the page.
+     */
+    function hideAllMessages() {
+        document.getElementById('error-message')?.classList.add('hidden');
+        document.getElementById('success-message')?.classList.add('hidden');
+    }
 
-// Example: Handling a Sign Up Form
-const signUpForm = document.querySelector('#signUpForm'); // Make sure your sign-up form has this ID
-if (signUpForm) {
-    signUpForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const email = event.target.email.value;
-        const password = event.target.password.value;
+    /**
+     * Shows an error message on the form.
+     * @param {string} message - The error message to display.
+     */
+    function showErrorMessage(message) {
+        hideAllMessages();
+        const errorContainer = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        if (errorContainer && errorText) {
+            errorText.textContent = message;
+            errorContainer.classList.remove('hidden');
+        }
+    }
 
-        const { data, error } = await supabase.auth.signUp({ email, password });
+    /**
+     * Shows a success message on the form (for signup).
+     */
+    function showSuccessMessage() {
+        hideAllMessages();
+        const successContainer = document.getElementById('success-message');
+        if (successContainer) {
+            successContainer.classList.remove('hidden');
+        }
+    }
 
+    /**
+     * Handles Google Sign In for both pages.
+     */
+    async function handleGoogleSignIn() {
+        const { error } = await _supabase.auth.signInWithOAuth({
+            provider: 'google',
+        });
         if (error) {
-            alert('Error signing up: ' + error.message);
-        } else {
-            alert('Sign up successful! Please check your email to verify your account.');
-            // Redirect to a "check your email" page or the login page
-            window.location.href = '/Sign In.html';
+            showErrorMessage('Could not sign in with Google. Please try again.');
         }
-    });
-}
+    }
+    
+    const googleSignInBtn = document.getElementById('google-signin-btn');
+    if(googleSignInBtn) {
+        googleSignInBtn.addEventListener('click', handleGoogleSignIn);
+    }
 
-// Example: Handling a Sign In Form
-const signInForm = document.querySelector('#signInForm'); // Make sure your sign-in form has this ID
-if (signInForm) {
-    signInForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const email = event.target.email.value;
-        const password = event.target.password.value;
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-        if (error) {
-            alert('Error signing in: ' + error.message);
-        } else {
-            // Redirect to the main dashboard after successful login
-            window.location.href = '/Dashboard.html';
-        }
-    });
-}
-
-// Example: Handling a Logout Button
-const logoutButton = document.querySelector('#logoutButton'); // Give your logout button this ID
-if (logoutButton) {
-    logoutButton.addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        // Redirect to the landing page after logout
-        window.location.href = '/';
-    });
-}
-
-// --- AI Generator Logic ---
-
-// Example: Handling the "Generate" form on your Dashboard/New Chat page
-const generatorForm = document.querySelector('#generatorForm'); // Give your generator form this ID
-if (generatorForm) {
-    generatorForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        // Get the user's session and security token
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            alert('You must be logged in to generate content.');
-            return;
+    // --- SIGN IN PAGE LOGIC ---
+    const signInForm = document.getElementById('signInForm');
+    if (signInForm) {
+        const rememberedEmail = localStorage.getItem('rememberedEmail');
+        if (rememberedEmail) {
+            document.getElementById('email').value = rememberedEmail;
+            document.getElementById('remember-me').checked = true;
         }
 
-        const topic = event.target.topic.value; // Make sure your topic input has name="topic"
-        const generateButton = event.target.querySelector('button');
+        signInForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('remember-me').checked;
+            
+            const submitButton = signInForm.querySelector('button[type="submit"]');
+            const buttonText = submitButton.querySelector('.button-text');
+            const buttonSpinner = submitButton.querySelector('.button-spinner');
 
-        // Show a loading state
-        generateButton.disabled = true;
-        generateButton.textContent = 'Weaving...';
+            // Show loading state
+            submitButton.disabled = true;
+            buttonText.classList.add('hidden');
+            buttonSpinner.classList.remove('hidden');
+            hideAllMessages();
 
-        try {
-            // Call your Vercel backend function
-            const response = await fetch('/api', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ topic: topic })
-            });
+            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
 
-            if (!response.ok) {
-                throw new Error('Failed to generate content.');
+            // Hide loading state
+            submitButton.disabled = false;
+            buttonText.classList.remove('hidden');
+            buttonSpinner.classList.add('hidden');
+
+            if (error) {
+                showErrorMessage(error.message);
+            } else {
+                if (rememberMe) {
+                    localStorage.setItem('rememberedEmail', email);
+                } else {
+                    localStorage.removeItem('rememberedEmail');
+                }
+                window.location.href = '/Dashboard.html';
+            }
+        });
+    }
+
+
+    // --- SIGN UP PAGE LOGIC ---
+    const signUpForm = document.getElementById('signUpForm');
+    if (signUpForm) {
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        const passwordMatchIcon = document.getElementById('password-match-icon');
+        const passwordMatchText = document.getElementById('password-match-text');
+        const strengthBar = document.getElementById('password-strength-bar');
+        const strengthText = document.getElementById('password-strength-text');
+        const lengthCheck = document.getElementById('length-check');
+        const caseCheck = document.getElementById('case-check');
+        const numberCheck = document.getElementById('number-check');
+        const termsCheckbox = document.getElementById('terms');
+        const submitButton = document.getElementById('submit-btn');
+        const submitWrapper = document.getElementById('submit-wrapper');
+        const tooltip = document.getElementById('tooltip');
+
+        // Password strength checker logic
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            let score = 0;
+            let strengthLabel = '';
+
+            const hasLength = password.length >= 8;
+            const hasMixedCase = /[a-z]/.test(password) && /[A-Z]/.test(password);
+            const hasNumberOrSymbol = /[\d\W]/.test(password);
+
+            lengthCheck.innerHTML = hasLength ? '✓ At least 8 characters' : 'At least 8 characters';
+            lengthCheck.className = hasLength ? 'text-green-400' : 'text-gray-400';
+            
+            caseCheck.innerHTML = hasMixedCase ? '✓ Mix of uppercase & lowercase' : 'Mix of uppercase & lowercase';
+            caseCheck.className = hasMixedCase ? 'text-green-400' : 'text-gray-400';
+
+            numberCheck.innerHTML = hasNumberOrSymbol ? '✓ At least one number or symbol' : 'At least one number or symbol';
+            numberCheck.className = hasNumberOrSymbol ? 'text-green-400' : 'text-gray-400';
+
+            if (hasLength) score++;
+            if (hasMixedCase) score++;
+            if (hasNumberOrSymbol) score++;
+
+            switch (score) {
+                case 1:
+                    strengthLabel = 'Weak';
+                    strengthBar.style.width = '33%';
+                    strengthBar.className = 'h-2 rounded-full bg-red-500 transition-all duration-300';
+                    break;
+                case 2:
+                    strengthLabel = 'Medium';
+                    strengthBar.style.width = '66%';
+                    strengthBar.className = 'h-2 rounded-full bg-yellow-500 transition-all duration-300';
+                    break;
+                case 3:
+                    strengthLabel = 'Strong';
+                    strengthBar.style.width = '100%';
+                    strengthBar.className = 'h-2 rounded-full bg-green-500 transition-all duration-300';
+                    break;
+                default:
+                    strengthLabel = '';
+                    strengthBar.style.width = '0%';
+                    strengthBar.className = 'h-2 rounded-full transition-all duration-300';
+                    break;
+            }
+            strengthText.textContent = strengthLabel;
+            strengthText.className = `text-xs font-medium ${score === 1 ? 'text-red-400' : score === 2 ? 'text-yellow-400' : score === 3 ? 'text-green-400' : 'text-gray-400'}`;
+        });
+        
+        // Password confirmation validation logic
+        const validatePasswords = () => {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            const originalBorderClasses = 'border-gray-600 focus:ring-purple-500';
+            const successBorderClasses = 'border-green-500 focus:ring-green-500';
+            const errorBorderClasses = 'border-red-500 focus:ring-red-500';
+
+            if (confirmPassword.length === 0) {
+                passwordMatchIcon.classList.add('hidden');
+                passwordMatchText.classList.add('hidden');
+                confirmPasswordInput.className = confirmPasswordInput.className.replace(new RegExp(`${successBorderClasses}|${errorBorderClasses}`, 'g'), originalBorderClasses);
+                return;
             }
 
-            const result = await response.json();
+            if (password === confirmPassword) {
+                passwordMatchIcon.textContent = 'check_circle';
+                passwordMatchIcon.className = 'material-symbols-outlined absolute inset-y-0 right-0 pr-3 flex items-center text-green-500';
+                passwordMatchText.textContent = 'Passwords match!';
+                passwordMatchText.className = 'mt-2 text-xs text-green-400';
+                confirmPasswordInput.className = confirmPasswordInput.className.replace(new RegExp(`${originalBorderClasses}|${errorBorderClasses}`, 'g'), successBorderClasses);
+            } else {
+                passwordMatchIcon.textContent = 'cancel';
+                passwordMatchIcon.className = 'material-symbols-outlined absolute inset-y-0 right-0 pr-3 flex items-center text-red-500';
+                passwordMatchText.textContent = 'Passwords do not match.';
+                passwordMatchText.className = 'mt-2 text-xs text-red-400';
+                confirmPasswordInput.className = confirmPasswordInput.className.replace(new RegExp(`${originalBorderClasses}|${successBorderClasses}`, 'g'), errorBorderClasses);
+            }
+        };
 
-            // Save the result to the browser's local storage to pass it to the next page
-            localStorage.setItem('generatedResult', JSON.stringify(result));
+        passwordInput.addEventListener('input', validatePasswords);
+        confirmPasswordInput.addEventListener('input', validatePasswords);
 
-            // Redirect to the results page
-            window.location.href = '/Generation Page.html';
+        // Terms and Conditions Checkbox Logic
+        termsCheckbox.addEventListener('input', () => {
+            submitButton.disabled = !termsCheckbox.checked;
+        });
 
-        } catch (error) {
-            alert('An error occurred: ' + error.message);
-            generateButton.disabled = false;
-            generateButton.textContent = 'Generate';
-        }
-    });
-}
+        // Tooltip logic for disabled button
+        submitWrapper.addEventListener('mouseover', () => {
+            if (submitButton.disabled) {
+                tooltip.classList.remove('hidden');
+            }
+        });
+        submitWrapper.addEventListener('mouseout', () => {
+            tooltip.classList.add('hidden');
+        });
 
-// --- Displaying Results on the Generation Page ---
+        // Submit logic
+        signUpForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const fullName = document.getElementById('full-name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const buttonText = submitButton.querySelector('.button-text');
+            const buttonSpinner = submitButton.querySelector('.button-spinner');
+            
+            hideAllMessages();
 
-// This code should run on your Generation Page.html
-// We check the URL to see if we are on the right page.
-if (window.location.pathname.includes('Generation Page.html')) {
-    const result = JSON.parse(localStorage.getItem('generatedResult'));
+            if (password !== confirmPassword) {
+                showErrorMessage("Passwords do not match. Please try again.");
+                return;
+            }
 
-    if (result) {
-        // Now, you would write code to populate your 7 tabs with the data
-        // from result.lessonPlan and set the image source from result.imageUrl
-        console.log('Displaying result:', result);
+            // Show loading state
+            submitButton.disabled = true;
+            buttonText.classList.add('hidden');
+            buttonSpinner.classList.remove('hidden');
 
-        // Example for one field:
-        const topicTitle = document.querySelector('#topicTitle'); // Add id="topicTitle" to your H3 element
-        if (topicTitle) {
-            topicTitle.textContent = result.lessonPlan.topic;
-        }
+            const { data, error } = await _supabase.auth.signUp({
+                email: email,
+                password: password,
+                options: { data: { full_name: fullName } }
+            });
 
-        const storyContent = document.querySelector('#storyContent'); // Add id="storyContent" to the div for the story
-        if (storyContent) {
-            storyContent.innerHTML = `<p>${result.lessonPlan.tabs.storyAndRhyme.learningStory}</p>`;
-        }
-        
-        const mainImage = document.querySelector('#mainImage'); // Add id="mainImage" to your img tag
-        if (mainImage) {
-            mainImage.src = result.imageUrl;
-        }
+            // Hide loading state and re-enable button if there was no error
+            // If there was an error, the terms box may need to be re-checked to re-enable
+            submitButton.disabled = !termsCheckbox.checked;
+            buttonText.classList.remove('hidden');
+            buttonSpinner.classList.add('hidden');
 
-        // ... and so on for all the other tabs and content.
+            if (error) {
+                showErrorMessage(error.message);
+            } else {
+                showSuccessMessage();
+                signUpForm.reset();
+                // After successful sign up, the button should be disabled again
+                submitButton.disabled = true; 
+            }
+        });
     }
-}
+});
+
