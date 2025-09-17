@@ -5,31 +5,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- Navigation Logic for Landing Page ---
-
-// Check if we are on the landing page (index.html) before running this code
-if (window.location.pathname === '/' || window.location.pathname.endsWith('index.html')) {
-    const enterLoomBtn = document.getElementById('enterLoomBtn');
-    const weaveWithUsBtn = document.getElementById('weaveWithUsBtn');
-    const startInspiringBtn = document.getElementById('startInspiringBtn');
-
-    if (enterLoomBtn) {
-        enterLoomBtn.addEventListener('click', () => {
-            window.location.href = '/Sign In.html';
-        });
-    }
-
-    if (weaveWithUsBtn) {
-        weaveWithUsBtn.addEventListener('click', () => {
-            window.location.href = '/Sign Up.html';
-        });
-    }
-
-    if (startInspiringBtn) {
-        // Also make the "Start Inspiring Today" link go to the sign-up page
-         startInspiringBtn.href = '/Sign Up.html';
-    }
-}
 
 // --- User Authentication Logic ---
 
