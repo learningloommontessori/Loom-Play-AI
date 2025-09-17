@@ -2,10 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Learning Loom AI</title>
+    <!-- Tailwind CSS with plugins -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    
     <style type="text/tailwindcss">
         body {
             font-family: 'Roboto', sans-serif;
@@ -13,23 +18,46 @@
     </style>
 </head>
 <body class="bg-gray-900 text-white">
-    <div class="relative min-h-screen">
-        <div class="absolute inset-0">
-            <img alt="Abstract purple and blue waves on a black background" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAZu9QWRIEFnKKG6SMF74gPyyMfKcVyImI8TeqE1aWnAEy17Z3Ob2KGfLCIeZhHwB3m8sldZ1JAvfz-y5wpsgDaZBSRb6S0wGB7p4XJL3VQ2JsWLB9gz3iT3yeNwq-tNnZaFJxCUbLxoqWIsjBrpFCc0ZdkKon35yRcmiw-mgn98WRAe4u-dsImTEuWVOqThZVmtgidaXz8oNaw_j2UG7odXaYWTgDIAYkh0fnLndUDkSH7Ho0BSd03oOllL7bpSfju2Yxnxa_HiMs" />
-            <div class="absolute inset-0 bg-black opacity-50"></div>
+
+    <!-- Main container for the entire page -->
+    <div class="relative min-h-screen flex flex-col">
+
+        <!-- Background Image and Overlay -->
+        <div class="absolute inset-0 z-0">
+            <!-- 
+              Using a placeholder image here for demonstration. 
+              You can replace the src with your original image URL.
+            -->
+            <img 
+              alt="Abstract purple and blue waves on a black background" 
+              class="w-full h-full object-cover" 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAZu9QWRIEFnKKG6SMF74gPyyMfKcVyImI8TeqE1aWnAEy17Z3Ob2KGfLCIeZhHwB3m8sldZ1JAvfz-y5wpsgDaZBSRb6S0wGB7p4XJL3VQ2JsWLB9gz3iT3yeNwq-tNnZaFJxCUbLxoqWIsjBrpFCc0ZdkKon35yRcmiw-mgn98WRAe4u-dsImTEuWVOqThZVmtgidaXz8oNaw_j2UG7odXaYWTgDIAYkh0fnLndUDkSH7Ho0BSd03oOllL7bpSfju2Yxnxa_HiMs"
+            />
+            <!-- Increased opacity slightly for better text contrast -->
+            <div class="absolute inset-0 bg-black opacity-60"></div>
         </div>
-        <header class="relative px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+
+        <!-- Header -->
+        <!-- z-10 ensures the header is above the background -->
+        <header class="relative z-10 px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold">Learning Loom AI</h1>
             <nav>
-                <a href="/Sign In.html" class="bg-transparent hover:bg-purple-700 text-white font-semibold py-2 px-4 border border-white hover:border-transparent rounded-md transition duration-300">
+                <!-- Link now points to the Sign In file -->
+                <a href="Sign In.html" class="bg-transparent hover:bg-purple-700 text-white font-semibold py-2 px-4 border border-white hover:border-transparent rounded-md transition duration-300">
                     Enter the Loom
                 </a>
-                <a href="/Sign Up.html" class="ml-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
-                    Weave with Us
+                <a href="Sign Up.html" class="ml-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md transition duration-300">
+                    Weave with us
                 </a>
             </nav>
         </header>
-        <main class="relative flex flex-col items-center justify-center min-h-screen text-center px-4 sm:px-6 lg:px-8 -mt-16">
+
+        <!-- Main Content -->
+        <!-- 
+          Using flex-grow to make the main content fill the available space,
+          which pushes the footer to the bottom.
+        -->
+        <main class="relative z-10 flex flex-grow flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8">
             <div class="max-w-2xl">
                 <h2 class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight">
                     Learning Loom AI: Weaving the Threads of Learning Just for You
@@ -38,17 +66,31 @@
                     Learning Loom AI helps teachers weave lessons that spark curiosity and joy. Every idea, every activity, every plan is crafted to nurture young minds and make learning a journey worth remembering.
                 </p>
                 <div class="mt-8">
-                    <a href="/Sign Up.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full text-lg transition duration-300 inline-block">
+                    <!-- Link now points to the Sign Up file -->
+                    <a href="Sign Up.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-full text-lg transition duration-300 inline-block">
                         Start Inspiring Today
                     </a>
                 </div>
             </div>
         </main>
-        <footer class="absolute bottom-4 right-4 text-sm text-gray-400">
-            Made By : Monika Pathak
+
+        <!-- Footer -->
+        <!-- The footer is now absolutely positioned to the bottom-right of the page. -->
+        <footer class="absolute z-10 bottom-4 right-4 text-sm text-gray-400">
+            Made By: Monika Pathak
         </footer>
     </div>
+
+    <!-- 
+      External JavaScript files. 
+      The main.js would handle functionality like authentication with Supabase.
+    -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/main.js"></script>
+    <!-- <script src="js/main.js"></script> -->
 </body>
 </html>
+
+
+
+
+
