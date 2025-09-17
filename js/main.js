@@ -1,11 +1,16 @@
 // This single script handles authentication for both Sign In and Sign Up pages.
-document.addEventListener('DOMContentLoaded', () => {
+import supabase from './supabaseClient.js';
 
-    // --- SUPABASE INITIALIZATION ---
-    // Make sure to replace these with your actual Supabase URL and Key
-    import supabase from './supabaseClient.js';
+document.addEventListener('DOMContentLoaded', async () => {
 
     console.log('Supabase client initialized.');
+
+    // Redirect authenticated users to the dashboard.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+        window.location.href = '/Dashboard.html';
+        return;
+    }
 
 
     /**
@@ -45,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Handles Google Sign In for both pages.
      */
     async function handleGoogleSignIn() {
-        const { error } = await _supabase.auth.signInWithOAuth({
+        const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
         });
         if (error) {
@@ -84,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonSpinner.classList.remove('hidden');
             hideAllMessages();
 
-            const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
             // Hide loading state
             submitButton.disabled = false;
@@ -216,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         submitWrapper.addEventListener('mouseout', () => {
-            tooltip.classList.add('hidden');
+box.classList.add('hidden');
         });
 
         // Submit logic
@@ -241,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
             buttonText.classList.add('hidden');
             buttonSpinner.classList.remove('hidden');
 
-            const { data, error } = await _supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: password,
                 options: { data: { full_name: fullName } }
@@ -264,4 +269,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
