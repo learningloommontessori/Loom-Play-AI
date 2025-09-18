@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Learning Loom AI – Sign Up</title>
+  <title>Loom Play AI – Sign Up</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
@@ -47,7 +47,7 @@
         <form class="space-y-6 mt-6" id="signUpForm">
           <!-- success / error banners -->
           <div id="success-message" class="bg-green-900/50 border border-green-500 rounded-md p-3 hidden">
-            <div class="flex"><span class="material-symbols-outlined text-green-400">check_circle</span><div class="ml-3"><h3 class="text-sm font-medium text-green-300">Success!</h3><p class="mt-2 text-sm text-green-400">Please check your email for a confirmation link.</p></div></div>
+            <div class="flex"><span class="material-symbols-outlined text-green-400">check_circle</span><div class="ml-3"><h3 class="text-sm font-medium text-green-300">Success!</h3><p id="success-text" class="mt-2 text-sm text-green-400">Please check your email for a confirmation link.</p></div></div>
           </div>
           <div id="error-message" class="bg-red-900/50 border border-red-500 rounded-md p-3 hidden">
             <div class="flex"><span class="material-symbols-outlined text-red-400">error</span><div class="ml-3"><h3 class="text-sm font-medium text-red-300">Something went wrong</h3><p id="error-text" class="mt-2 text-sm text-red-400">Could not sign up. Please try again.</p></div></div>
@@ -103,163 +103,9 @@
     <footer class="relative z-10 w-full text-right py-4 px-4 sm:px-6 lg:px-8"><p class="text-sm text-gray-400">Made By: Monika Pathak</p></footer>
   </div>
 
-<!-- =========  SUPABASE INITIALISATION  ========= -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  (async () => {
-    /* 1.  load public config  */
-    const { url, anon } = await fetch('/api/config').then(r => r.json());
-
-    /* 2.  create client  */
-    const supabase = supabase.createClient(url, anon);
-    window.supabase = supabase;   // make it global for the form-submit code
-
-    /* 3.  wire Google button  */
-    document.getElementById('google-signin-btn')
-            .addEventListener('click', () => {
-              supabase.auth.signInWithOAuth({ provider: 'google' });
-            });
-  })();
-</script>
-
-<!-- =========  PAGE-SPECIFIC LOGIC  ========= -->
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (!document.getElementById('signUpForm')) return;
-
-  /* ----------  password strength + match  ---------- */
-  const passwordInput   = document.getElementById('password');
-  const confirmInput    = document.getElementById('confirm-password');
-  const strengthBar     = document.getElementById('password-strength-bar');
-  const strengthText    = document.getElementById('password-strength-text');
-  const lengthCheck     = document.getElementById('length-check');
-  const caseCheck       = document.getElementById('case-check');
-  const numberCheck     = document.getElementById('number-check');
-  const matchIcon       = document.getElementById('password-match-icon');
-  const matchText       = document.getElementById('password-match-text');
-  const termsCheckbox   = document.getElementById('terms');
-  const submitBtn       = document.getElementById('submit-btn');
-  const tooltip         = document.getElementById('tooltip');
-  const submitWrapper   = document.getElementById('submit-wrapper');
-
-  function updateStrength() {
-    const p = passwordInput.value;
-    let score = 0;
-    const hasLen      = p.length >= 8;
-    const hasCase     = /[a-z]/.test(p) && /[A-Z]/.test(p);
-    const hasNumSym   = /[\d\W]/.test(p);
-
-    lengthCheck.textContent = hasLen ? '✓ At least 8 characters' : 'At least 8 characters';
-    lengthCheck.className   = hasLen ? 'text-green-400' : 'text-gray-400';
-    caseCheck.textContent   = hasCase ? '✓ Mix of uppercase & lowercase' : 'Mix of uppercase & lowercase';
-    caseCheck.className     = hasCase ? 'text-green-400' : 'text-gray-400';
-    numberCheck.textContent = hasNumSym ? '✓ At least one number or symbol' : 'At least one number or symbol';
-    numberCheck.className   = hasNumSym ? 'text-green-400' : 'text-gray-400';
-
-    if (hasLen)      score++;
-    if (hasCase)     score++;
-    if (hasNumSym)   score++;
-
-    let label = '', width = 0, color = '';
-    switch (score) {
-      case 1: label = 'Weak';   width = 33;  color = 'bg-red-500';    break;
-      case 2: label = 'Medium'; width = 66;  color = 'bg-yellow-500'; break;
-      case 3: label = 'Strong'; width = 100; color = 'bg-green-500';  break;
-      default: label = '';     width = 0;   color = '';              break;
-    }
-    strengthBar.style.width = width + '%';
-    strengthBar.className   = 'h-2 rounded-full transition-all duration-300 ' + color;
-    strengthText.textContent = label;
-    strengthText.className  = `text-xs font-medium ${
-      score === 1 ? 'text-red-400' : score === 2 ? 'text-yellow-400' : score === 3 ? 'text-green-400' : 'text-gray-400'
-    }`;
-  }
-
-  function validateMatch() {
-    const p  = passwordInput.value;
-    const cp = confirmInput.value;
-    if (!cp) {
-      matchIcon.classList.add('hidden');
-      matchText.classList.add('hidden');
-      confirmInput.classList.remove('border-green-500', 'border-red-500');
-      return;
-    }
-    matchIcon.classList.remove('hidden');
-    matchText.classList.remove('hidden');
-
-    if (p === cp) {
-      matchIcon.textContent = 'check_circle';
-      matchIcon.classList.remove('text-red-500');
-      matchIcon.classList.add('text-green-500');
-      matchText.textContent = 'Passwords match!';
-      matchText.classList.remove('text-red-400');
-      matchText.classList.add('text-green-400');
-      confirmInput.classList.remove('border-red-500');
-      confirmInput.classList.add('border-green-500');
-    } else {
-      matchIcon.textContent = 'cancel';
-      matchIcon.classList.remove('text-green-500');
-      matchIcon.classList.add('text-red-500');
-      matchText.textContent = 'Passwords do not match.';
-      matchText.classList.remove('text-green-400');
-      matchText.classList.add('text-red-400');
-      confirmInput.classList.remove('border-green-500');
-      confirmInput.classList.add('border-red-500');
-    }
-  }
-
-  passwordInput.addEventListener('input', updateStrength);
-  passwordInput.addEventListener('input', validateMatch);
-  confirmInput.addEventListener('input', validateMatch);
-
-  /* ---- terms checkbox ---- */
-  termsCheckbox.addEventListener('input', () => submitBtn.disabled = !termsCheckbox.checked);
-
-  /* ---- tooltip ---- */
-  submitWrapper.addEventListener('mouseover', () => { if (submitBtn.disabled) tooltip.classList.remove('hidden'); });
-  submitWrapper.addEventListener('mouseout', () => tooltip.classList.add('hidden'));
-
-  /* ---- form submit ---- */
-  document.getElementById('signUpForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!window.supabase) { alert('Still loading – please wait.'); return; }
-
-    const fullName = document.getElementById('full-name').value;
-    const email    = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const confirm  = document.getElementById('confirm-password').value;
-
-    if (password !== confirm) {
-      alert("Passwords don't match.");
-      return;
-    }
-
-    const buttonText = submitBtn.querySelector('.button-text');
-    const buttonSpin = submitBtn.querySelector('.button-spinner');
-    submitBtn.disabled = true;
-    buttonText.classList.add('hidden');
-    buttonSpin.classList.remove('hidden');
-
-    const { data, error } = await window.supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } }
-    });
-
-    submitBtn.disabled = false;
-    buttonText.classList.remove('hidden');
-    buttonSpin.classList.add('hidden');
-
-    if (error) {
-      alert('Sign-up failed: ' + error.message);
-    } else {
-      document.getElementById('success-message').classList.remove('hidden');
-      document.getElementById('signUpForm').reset();
-      submitBtn.disabled = true;
-    }
-  });
-});
-</script>
+  <!-- Main application script -->
+  <script src="/js/main.js" type="module"></script>
 
 </body>
 </html>
+
