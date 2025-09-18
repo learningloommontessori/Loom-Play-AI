@@ -187,22 +187,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (confirmPassword.length === 0) {
                 passwordMatchIcon.classList.add('hidden');
                 passwordMatchText.classList.add('hidden');
-                confirmPasswordInput.className = confirmPasswordInput.className.replace(new RegExp(`${successBorderClasses}|${errorBorderClasses}`, 'g'), originalBorderClasses);
+                confirmPasswordInput.classList.remove(successBorderClasses, errorBorderClasses);
+                confirmPasswordInput.classList.add(originalBorderClasses);
                 return;
             }
+            
+            passwordMatchIcon.classList.remove('hidden');
+            passwordMatchText.classList.remove('hidden');
 
             if (password === confirmPassword) {
                 passwordMatchIcon.textContent = 'check_circle';
-                passwordMatchIcon.className = 'material-symbols-outlined absolute inset-y-0 right-0 pr-3 flex items-center text-green-500';
+                passwordMatchIcon.classList.remove('text-red-500');
+                passwordMatchIcon.classList.add('text-green-500');
                 passwordMatchText.textContent = 'Passwords match!';
-                passwordMatchText.className = 'mt-2 text-xs text-green-400';
-                confirmPasswordInput.className = confirmPasswordInput.className.replace(new RegExp(`${originalBorderClasses}|${errorBorderClasses}`, 'g'), successBorderClasses);
+                passwordMatchText.classList.remove('text-red-400');
+                passwordMatchText.classList.add('text-green-400');
+                confirmPasswordInput.classList.remove(errorBorderClasses);
+                confirmPasswordInput.classList.add(successBorderClasses);
             } else {
                 passwordMatchIcon.textContent = 'cancel';
-                passwordMatchIcon.className = 'material-symbols-outlined absolute inset-y-0 right-0 pr-3 flex items-center text-red-500';
+                passwordMatchIcon.classList.remove('text-green-500');
+                passwordMatchIcon.classList.add('text-red-500');
                 passwordMatchText.textContent = 'Passwords do not match.';
-                passwordMatchText.className = 'mt-2 text-xs text-red-400';
-                confirmPasswordInput.className = confirmPasswordInput.className.replace(new RegExp(`${originalBorderClasses}|${successBorderClasses}`, 'g'), errorBorderClasses);
+                passwordMatchText.classList.remove('text-green-400');
+                passwordMatchText.classList.add('text-red-400');
+                confirmPasswordInput.classList.remove(successBorderClasses);
+                confirmPasswordInput.classList.add(errorBorderClasses);
             }
         };
 
@@ -221,7 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
         submitWrapper.addEventListener('mouseout', () => {
-box.classList.add('hidden');
+            tooltip.classList.add('hidden');
         });
 
         // Submit logic
@@ -253,10 +263,10 @@ box.classList.add('hidden');
             });
 
             // Hide loading state and re-enable button if there was no error
-            // If there was an error, the terms box may need to be re-checked to re-enable
-            submitButton.disabled = !termsCheckbox.checked;
             buttonText.classList.remove('hidden');
             buttonSpinner.classList.add('hidden');
+            submitButton.disabled = !termsCheckbox.checked;
+
 
             if (error) {
                 showErrorMessage(error.message);
