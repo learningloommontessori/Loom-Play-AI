@@ -103,76 +103,114 @@
     <footer class="relative z-10 w-full text-right py-4 px-4 sm:px-6 lg:px-8"><p class="text-sm text-gray-400">Made By: Monika Pathak</p></footer>
   </div>
 
+<!-- =========  SUPABASE INITIALISATION  ========= -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  (async () => {
+    /* 1.  load public config  */
+    const { url, anon } = await fetch('/api/config').then(r => r.json());
 
-/* =========  SIGN-UP ONLY LOGIC  ========= */
+    /* 2.  create client  */
+    const supabase = supabase.createClient(url, anon);
+    window.supabase = supabase;   // make it global for the form-submit code
+
+    /* 3.  wire Google button  */
+    document.getElementById('google-signin-btn')
+            .addEventListener('click', () => {
+              supabase.auth.signInWithOAuth({ provider: 'google' });
+            });
+  })();
+</script>
+
+<!-- =========  PAGE-SPECIFIC LOGIC  ========= -->
+<script>
 document.addEventListener('DOMContentLoaded', () => {
-  if (!document.getElementById('signUpForm')) return;   // leave if not sign-up page
+  if (!document.getElementById('signUpForm')) return;
 
-  const passwordInput = document.getElementById('password');
-  const confirmPasswordInput = document.getElementById('confirm-password');
-  const strengthBar = document.getElementById('password-strength-bar');
-  const strengthText = document.getElementById('password-strength-text');
-  const lengthCheck = document.getElementById('length-check');
-  const caseCheck = document.getElementById('case-check');
-  const numberCheck = document.getElementById('number-check');
-  const matchIcon = document.getElementById('password-match-icon');
-  const matchText = document.getElementById('password-match-text');
-  const termsCheckbox = document.getElementById('terms');
-  const submitBtn = document.getElementById('submit-btn');
-  const tooltip = document.getElementById('tooltip');
-  const submitWrapper = document.getElementById('submit-wrapper');
+  /* ----------  password strength + match  ---------- */
+  const passwordInput   = document.getElementById('password');
+  const confirmInput    = document.getElementById('confirm-password');
+  const strengthBar     = document.getElementById('password-strength-bar');
+  const strengthText    = document.getElementById('password-strength-text');
+  const lengthCheck     = document.getElementById('length-check');
+  const caseCheck       = document.getElementById('case-check');
+  const numberCheck     = document.getElementById('number-check');
+  const matchIcon       = document.getElementById('password-match-icon');
+  const matchText       = document.getElementById('password-match-text');
+  const termsCheckbox   = document.getElementById('terms');
+  const submitBtn       = document.getElementById('submit-btn');
+  const tooltip         = document.getElementById('tooltip');
+  const submitWrapper   = document.getElementById('submit-wrapper');
 
-  /* ---- strength meter ---- */
-  passwordInput.addEventListener('input', () => {
+  function updateStrength() {
     const p = passwordInput.value;
     let score = 0;
-    const hasLen = p.length >= 8;
-    const hasCase = /[a-z]/.test(p) && /[A-Z]/.test(p);
-    const hasNumSym = /[\d\W]/.test(p);
+    const hasLen      = p.length >= 8;
+    const hasCase     = /[a-z]/.test(p) && /[A-Z]/.test(p);
+    const hasNumSym   = /[\d\W]/.test(p);
 
     lengthCheck.textContent = hasLen ? '✓ At least 8 characters' : 'At least 8 characters';
-    lengthCheck.className = hasLen ? 'text-green-400' : 'text-gray-400';
-    caseCheck.textContent = hasCase ? '✓ Mix of uppercase & lowercase' : 'Mix of uppercase & lowercase';
-    caseCheck.className = hasCase ? 'text-green-400' : 'text-gray-400';
+    lengthCheck.className   = hasLen ? 'text-green-400' : 'text-gray-400';
+    caseCheck.textContent   = hasCase ? '✓ Mix of uppercase & lowercase' : 'Mix of uppercase & lowercase';
+    caseCheck.className     = hasCase ? 'text-green-400' : 'text-gray-400';
     numberCheck.textContent = hasNumSym ? '✓ At least one number or symbol' : 'At least one number or symbol';
-    numberCheck.className = hasNumSym ? 'text-green-400' : 'text-gray-400';
+    numberCheck.className   = hasNumSym ? 'text-green-400' : 'text-gray-400';
 
-    if (hasLen) score++;
-    if (hasCase) score++;
-    if (hasNumSym) score++;
+    if (hasLen)      score++;
+    if (hasCase)     score++;
+    if (hasNumSym)   score++;
 
     let label = '', width = 0, color = '';
     switch (score) {
-      case 1: label = 'Weak'; width = 33; color = 'bg-red-500'; break;
-      case 2: label = 'Medium'; width = 66; color = 'bg-yellow-500'; break;
-      case 3: label = 'Strong'; width = 100; color = 'bg-green-500'; break;
-      default: label = ''; width = 0; color = ''; break;
+      case 1: label = 'Weak';   width = 33;  color = 'bg-red-500';    break;
+      case 2: label = 'Medium'; width = 66;  color = 'bg-yellow-500'; break;
+      case 3: label = 'Strong'; width = 100; color = 'bg-green-500';  break;
+      default: label = '';     width = 0;   color = '';              break;
     }
     strengthBar.style.width = width + '%';
-    strengthBar.className = 'h-2 rounded-full transition-all duration-300 ' + color;
+    strengthBar.className   = 'h-2 rounded-full transition-all duration-300 ' + color;
     strengthText.textContent = label;
-    strengthText.className = `text-xs font-medium ${score === 1 ? 'text-red-400' : score === 2 ? 'text-yellow-400' : score === 3 ? 'text-green-400' : 'text-gray-400'}`;
-  });
+    strengthText.className  = `text-xs font-medium ${
+      score === 1 ? 'text-red-400' : score === 2 ? 'text-yellow-400' : score === 3 ? 'text-green-400' : 'text-gray-400'
+    }`;
+  }
 
-  /* ---- password match ---- */
   function validateMatch() {
-    const p = passwordInput.value, cp = confirmPasswordInput.value;
-    if (!cp) { matchIcon.classList.add('hidden'); matchText.classList.add('hidden'); confirmPasswordInput.classList.remove('border-green-500','border-red-500'); return; }
-    matchIcon.classList.remove('hidden'); matchText.classList.remove('hidden');
+    const p  = passwordInput.value;
+    const cp = confirmInput.value;
+    if (!cp) {
+      matchIcon.classList.add('hidden');
+      matchText.classList.add('hidden');
+      confirmInput.classList.remove('border-green-500', 'border-red-500');
+      return;
+    }
+    matchIcon.classList.remove('hidden');
+    matchText.classList.remove('hidden');
+
     if (p === cp) {
-      matchIcon.textContent = 'check_circle'; matchIcon.classList.remove('text-red-500'); matchIcon.classList.add('text-green-500');
-      matchText.textContent = 'Passwords match!'; matchText.classList.remove('text-red-400'); matchText.classList.add('text-green-400');
-      confirmPasswordInput.classList.remove('border-red-500'); confirmPasswordInput.classList.add('border-green-500');
+      matchIcon.textContent = 'check_circle';
+      matchIcon.classList.remove('text-red-500');
+      matchIcon.classList.add('text-green-500');
+      matchText.textContent = 'Passwords match!';
+      matchText.classList.remove('text-red-400');
+      matchText.classList.add('text-green-400');
+      confirmInput.classList.remove('border-red-500');
+      confirmInput.classList.add('border-green-500');
     } else {
-      matchIcon.textContent = 'cancel'; matchIcon.classList.remove('text-green-500'); matchIcon.classList.add('text-red-500');
-      matchText.textContent = 'Passwords do not match.'; matchText.classList.remove('text-green-400'); matchText.classList.add('text-red-400');
-      confirmPasswordInput.classList.remove('border-green-500'); confirmPasswordInput.classList.add('border-red-500');
+      matchIcon.textContent = 'cancel';
+      matchIcon.classList.remove('text-green-500');
+      matchIcon.classList.add('text-red-500');
+      matchText.textContent = 'Passwords do not match.';
+      matchText.classList.remove('text-green-400');
+      matchText.classList.add('text-red-400');
+      confirmInput.classList.remove('border-green-500');
+      confirmInput.classList.add('border-red-500');
     }
   }
+
+  passwordInput.addEventListener('input', updateStrength);
   passwordInput.addEventListener('input', validateMatch);
-  confirmPasswordInput.addEventListener('input', validateMatch);
+  confirmInput.addEventListener('input', validateMatch);
 
   /* ---- terms checkbox ---- */
   termsCheckbox.addEventListener('input', () => submitBtn.disabled = !termsCheckbox.checked);
@@ -181,41 +219,46 @@ document.addEventListener('DOMContentLoaded', () => {
   submitWrapper.addEventListener('mouseover', () => { if (submitBtn.disabled) tooltip.classList.remove('hidden'); });
   submitWrapper.addEventListener('mouseout', () => tooltip.classList.add('hidden'));
 
-  /* ---- form submit (basic) ---- */
+  /* ---- form submit ---- */
   document.getElementById('signUpForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    /* your existing Supabase submit logic here … */
+    if (!window.supabase) { alert('Still loading – please wait.'); return; }
+
+    const fullName = document.getElementById('full-name').value;
+    const email    = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirm-password').value;
+
+    if (password !== confirm) {
+      alert("Passwords don't match.");
+      return;
+    }
+
+    const buttonText = submitBtn.querySelector('.button-text');
+    const buttonSpin = submitBtn.querySelector('.button-spinner');
+    submitBtn.disabled = true;
+    buttonText.classList.add('hidden');
+    buttonSpin.classList.remove('hidden');
+
+    const { data, error } = await window.supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } }
+    });
+
+    submitBtn.disabled = false;
+    buttonText.classList.remove('hidden');
+    buttonSpin.classList.add('hidden');
+
+    if (error) {
+      alert('Sign-up failed: ' + error.message);
+    } else {
+      document.getElementById('success-message').classList.remove('hidden');
+      document.getElementById('signUpForm').reset();
+      submitBtn.disabled = true;
+    }
   });
 });
-
-/* =========  GOOGLE SIGN-IN  ========= */
-async function handleGoogleSignIn() {
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-  });
-  if (error) {
-    alert('Could not sign in with Google. Please try again.');
-  }
-}
-document.getElementById('google-signin-btn').addEventListener('click', handleGoogleSignIn);
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-  (async () => {
-    /* 1.  get public credentials  */
-    const { url, anon } = await fetch('/api/config').then(r => r.json());
-
-    /* 2.  create client  */
-    const supabase = supabase.createClient(url, anon);
-
-    /* 3.  wire the Google button  */
-    document.getElementById('google-signin-btn')
-            .addEventListener('click', () => {
-              supabase.auth.signInWithOAuth({ provider: 'google' });
-            });
-  })();
 </script>
 
 </body>
