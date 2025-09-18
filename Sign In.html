@@ -127,16 +127,23 @@
 <script src="/js/main.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
   (async () => {
-    if (window.supabase) return;                // already loaded
+    /* 1.  get public credentials  */
     const { url, anon } = await fetch('/api/config').then(r => r.json());
-    window.supabase = supabase.createClient(url, anon);
 
-    /* page-specific auth code … */
+    /* 2.  create client  */
+    const supabase = supabase.createClient(url, anon);
+
+    /* 3.  wire the Google button  */
+    document.getElementById('google-signin-btn')
+            .addEventListener('click', () => {
+              supabase.auth.signInWithOAuth({ provider: 'google' });
+            });
   })();
 </script>
-
+Pu
 </body>
 </html>
 
