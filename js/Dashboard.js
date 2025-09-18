@@ -1,61 +1,43 @@
-    // --- SUPABASE INITIALIZATION ---
-import supabase from './supabaseClient.js';
+import getSupabase from './supabaseClient.js';
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Supabase client initialized for dashboard page.');
+document.addEventListener('DOMContentLoaded', async () => {
+    const supabase = await getSupabase();
 
-    // --- DOM ELEMENTS ---
-    const userNameHeader = document.getElementById('user-name-header');
+    // Elements
+    const welcomeMessage = document.getElementById('welcome-message');
     const userNameMain = document.getElementById('user-name-main');
-    const logoutBtn = document.getElementById('logout-btn');
+    const logoutButton = document.getElementById('logoutButton');
 
+    // 1. Protect the page and get user data
+    const { data: { user } } = await supabase.auth.getUser();
 
-    /**
-     * Checks user authentication state and updates UI.
-     * Redirects to sign-in page if user is not logged in.
-     */
-    const checkUser = async () => {
-        const { data: { session } } = await _supabase.auth.getSession();
-
-        if (!session) {
-            // If no user is logged in, redirect to the sign-in page
-            window.location.href = '/Sign In.html';
-        } else {
-            // If a user is logged in, display their name
-            const user = session.user;
-            // Use the full name from sign-up, otherwise default to the email
-            const displayName = user.user_metadata?.full_name || user.email;
-            
-            if (userNameHeader) {
-                userNameHeader.textContent = `Welcome, ${displayName}!`;
-            }
-            if (userNameMain) {
-                userNameMain.textContent = `Welcome, ${displayName}`;
-            }
+    if (user) {
+        // 2. Display the user's name
+        const userName = user.user_metadata?.full_name || user.email;
+        if (welcomeMessage) {
+            welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`; // Show first name
+            welcomeMessage.classList.remove('hidden');
         }
-    };
-
-    /**
-     * Handles user logout.
-     */
-    const handleLogout = async () => {
-        const { error } = await _supabase.auth.signOut();
-        if (error) {
-            console.error('Error logging out:', error);
-        } else {
-            // Redirect to the landing page after successful logout
-            window.location.href = '/index.html';
+        if (userNameMain) {
+            userNameMain.textContent = `Welcome, ${userName}`; // Show full name
         }
-    };
+    } else {
+        // If no user is logged in, redirect to the Sign In page
+        window.location.href = '/Sign In.html';
+        return; // Stop executing the rest of the script
+    }
 
-    // --- EVENT LISTENERS ---
-    
-    // Check user status as soon as the page loads
-    checkUser();
-
-    // Attach the logout function to the logout button
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
+    // 3. Handle Logout
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Error logging out:', error);
+            } else {
+                // Redirect to the homepage after successful logout
+                window.location.href = '/index.html';
+            }
+        });
     }
 });
 
