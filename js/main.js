@@ -1,162 +1,119 @@
-// This script now ONLY handles authentication logic after the page is interactive.
 import getSupabase from './supabaseClient.js';
 
-/**
- * Initializes the Supabase client and sets up all authentication-related logic.
- */
-async function initializeAuth() {
-    // --- COMMON AUTH FUNCTIONS ---
-    function hideAllMessages() {
-        document.getElementById('error-message')?.classList.add('hidden');
-        document.getElementById('success-message')?.classList.add('hidden');
-    }
-    function showErrorMessage(message) {
-        hideAllMessages();
-        const errorContainer = document.getElementById('error-message');
-        const errorText = document.getElementById('error-text');
-        if (errorContainer && errorText) {
-            errorText.textContent = message;
-            errorContainer.classList.remove('hidden');
-        } else {
-            console.error("Error display elements not found.");
-        }
-    }
-    function showSuccessMessage(message) {
-        hideAllMessages();
-        const successContainer = document.getElementById('success-message');
-        const successText = document.getElementById('success-text');
-        if (successContainer && successText) {
-            successText.textContent = message;
-            successContainer.classList.remove('hidden');
-        }
-    }
+// --- Helper Functions ---
+function showMessage(type, text) {
+    const errorContainer = document.getElementById('error-message');
+    const successContainer = document.getElementById('success-message');
+    const errorText = document.getElementById('error-text');
+    const successText = document.getElementById('success-text');
 
-    // --- INITIALIZATION ---
+    // Hide both initially
+    if(errorContainer) errorContainer.classList.add('hidden');
+    if(successContainer) successContainer.classList.add('hidden');
+
+    if (type === 'error' && errorContainer && errorText) {
+        errorText.textContent = text;
+        errorContainer.classList.remove('hidden');
+    } else if (type === 'success' && successContainer && successText) {
+        successText.textContent = text;
+        successContainer.classList.remove('hidden');
+    }
+}
+
+function setLoadingState(form, isLoading) {
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (!submitButton) return;
+
+    const buttonText = submitButton.querySelector('.button-text');
+    const spinner = submitButton.querySelector('.button-spinner');
+
+    submitButton.disabled = isLoading;
+    if (buttonText) buttonText.classList.toggle('hidden', isLoading);
+    if (spinner) spinner.classList.toggle('hidden', !isLoading);
+}
+
+
+// --- Main Authentication Logic ---
+async function handlePageAuth() {
     const supabase = await getSupabase();
     if (!supabase) {
-        showErrorMessage('Could not connect to authentication service. Please check your connection or contact support.');
-        document.querySelectorAll('form').forEach(form => {
-            [...form.elements].forEach(el => el.disabled = true);
-        });
-        document.getElementById('google-signin-btn')?.setAttribute('disabled', 'true');
+        showMessage('error', 'Failed to connect to authentication service.');
         return;
     }
-    console.log('Supabase client initialized.');
 
-    // --- GOOGLE OAUTH ---
+    // --- Page Protection & Redirection ---
+    // If a user is already logged in and lands on an auth page, send them to the dashboard.
+    const { data: { session } } = await supabase.auth.getSession();
+    const isAuthPage = window.location.pathname.includes('/sign-in.html') || window.location.pathname.includes('/sign-up.html');
+
+    if (session && isAuthPage) {
+        window.location.replace('/dashboard.html');
+        return;
+    }
+
+    // --- Event Listeners ---
     const googleSignInBtn = document.getElementById('google-signin-btn');
     if (googleSignInBtn) {
         googleSignInBtn.addEventListener('click', async () => {
-            const { error } = await supabase.auth.signInWithOAuth({ 
+            const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/dashboard.html`
-                }
+                options: { redirectTo: `${window.location.origin}/dashboard.html` }
             });
-            if (error) {
-                showErrorMessage('Could not sign in with Google. Please try again.');
-            }
+            if (error) showMessage('error', 'Google Sign-In failed: ' + error.message);
         });
     }
 
-    // --- SIGN IN FORM SUBMISSION ---
     const signInForm = document.getElementById('signInForm');
     if (signInForm) {
-        signInForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const submitButton = signInForm.querySelector('button[type="submit"]');
-            const buttonText = submitButton.querySelector('.button-text');
-            const buttonSpinner = submitButton.querySelector('.button-spinner');
-
-            submitButton.disabled = true;
-            buttonText.classList.add('hidden');
-            buttonSpinner.classList.remove('hidden');
-            hideAllMessages();
-
+        signInForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setLoadingState(signInForm, true);
+            const email = signInForm.email.value;
+            const password = signInForm.password.value;
             const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-            submitButton.disabled = false;
-            buttonText.classList.remove('hidden');
-            buttonSpinner.classList.add('hidden');
-
             if (error) {
-                showErrorMessage(error.message);
+                showMessage('error', error.message);
+                setLoadingState(signInForm, false);
             } else {
-                window.location.href = '/dashboard.html';
+                window.location.replace('/dashboard.html');
             }
         });
     }
 
-    // --- SIGN UP FORM SUBMISSION ---
     const signUpForm = document.getElementById('signUpForm');
     if (signUpForm) {
-        signUpForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const fullName = document.getElementById('full-name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            const termsCheckbox = document.getElementById('terms');
-            const submitButton = document.getElementById('submit-btn');
-            const buttonText = submitButton.querySelector('.button-text');
-            const buttonSpinner = submitButton.querySelector('.button-spinner');
-            
-            hideAllMessages();
+        signUpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            setLoadingState(signUpForm, true);
+            const fullName = signUpForm['full-name'].value;
+            const email = signUpForm.email.value;
+            const password = signUpForm.password.value;
 
-            if (password !== confirmPassword) {
-                showErrorMessage("Passwords do not match. Please try again.");
-                return;
-            }
-
-            submitButton.disabled = true;
-            buttonText.classList.add('hidden');
-            buttonSpinner.classList.remove('hidden');
-
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-                options: { 
+            const { error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
                     data: { full_name: fullName },
                     emailRedirectTo: `${window.location.origin}/dashboard.html`
                 }
             });
 
-            buttonText.classList.remove('hidden');
-            buttonSpinner.classList.add('hidden');
-            submitButton.disabled = !termsCheckbox.checked;
-
             if (error) {
-                showErrorMessage(error.message);
+                showMessage('error', error.message);
             } else {
-                showSuccessMessage('Success! Please check your email for a confirmation link.');
+                showMessage('success', 'Please check your email for a verification link.');
                 signUpForm.reset();
-                submitButton.disabled = true; 
+                 // Disable button after successful submission until terms are re-checked
+                const submitButton = signUpForm.querySelector('button[type="submit"]');
+                if(submitButton) submitButton.disabled = true;
             }
+            setLoadingState(signUpForm, false);
         });
     }
 }
 
-// --- SCRIPT EXECUTION ---
-document.addEventListener('DOMContentLoaded', () => {
-    // This check ensures that we don't try to redirect from the dashboard to itself.
-    if (!window.location.pathname.includes('/dashboard.html')) {
-        // We need to check for an existing session on non-dashboard pages to auto-login users.
-        getSupabase().then(supabase => {
-            if (supabase) {
-                supabase.auth.getSession().then(({ data: { session } }) => {
-                    if (session) {
-                        window.location.href = '/dashboard.html';
-                    } else {
-                        initializeAuth();
-                    }
-                });
-            }
-        });
-    } else {
-        // On the dashboard, just initialize auth features (like logout) without redirecting.
-        initializeAuth();
-    }
-});
+// --- Run the authentication logic ---
+// We don't need to wrap this in DOMContentLoaded because the main.js script
+// is loaded with `type="module"` at the end of the body, so the DOM is already available.
+handlePageAuth();
 
