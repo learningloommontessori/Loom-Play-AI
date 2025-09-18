@@ -12,7 +12,7 @@ app.use(express.json());
 
 // Get your secret keys from Vercel's environment variables
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const CLIPDROP_API_KEY = process.env.CLIPDROP_API_KEY;
 
