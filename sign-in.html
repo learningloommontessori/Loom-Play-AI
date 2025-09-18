@@ -25,17 +25,9 @@
         </div>
         <header class="relative z-10 px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
              <div class="flex items-center space-x-4">
-                <!-- Main Navigation Menu -->
-                <div x-data="{ open: false }" class="relative">
-                    <button @click="open = !open" class="text-white focus:outline-none">
-                        <span class="material-symbols-outlined text-3xl">menu</span>
-                    </button>
-                    <div x-show="open" @click.away="open = false" x-transition class="absolute left-0 mt-2 w-64 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-20" style="display: none;">
-                        <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/index.html">
-                            <span class="material-symbols-outlined mr-3">cottage</span> Home
-                        </a>
-                    </div>
-                </div>
+                <a href="/index.html" class="text-white focus:outline-none">
+                    <span class="material-symbols-outlined text-3xl">cottage</span>
+                </a>
                 <h1 class="text-2xl font-bold">Loom Play AI</h1>
             </div>
         </header>
@@ -62,88 +54,32 @@
                     </div>
                 </div>
                 <form class="space-y-6 mt-6" id="signInForm">
-                    <!-- Error Message Container -->
                     <div id="error-message" class="bg-red-900/50 border border-red-500 rounded-md p-3 hidden">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <span class="material-symbols-outlined text-red-400">error</span>
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-red-300">Invalid Credentials</h3>
-                                <div class="mt-2 text-sm text-red-400">
-                                    <p id="error-text">The email or password you entered is incorrect. Please try again.</p>
-                                </div>
-                            </div>
-                        </div>
+                        <div class="flex"><span class="material-symbols-outlined text-red-400">error</span><div class="ml-3"><h3 class="text-sm font-medium text-red-300">Something went wrong</h3><p id="error-text" class="mt-2 text-sm text-red-400">Could not sign in. Please try again.</p></div></div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-300" for="email">Email Address</label>
-                        <div class="mt-1">
-                            <input autocomplete="email" class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="email" name="email" placeholder="you@example.com" required="" type="email" />
-                        </div>
+                        <input autocomplete="email" class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="email" name="email" placeholder="you@example.com" required type="email" />
                     </div>
                     <div>
                         <div class="flex items-center justify-between">
                             <label class="block text-sm font-medium text-gray-300" for="password">Password</label>
-                            <div class="text-sm">
-                                <a class="font-medium text-purple-400 hover:text-purple-300" href="forgot-password.html">Forgot your strand?</a>
-                            </div>
+                            <a class="font-medium text-purple-400 hover:text-purple-300" href="/forgot-password.html">Forgot your strand?</a>
                         </div>
-                        <div class="mt-1">
-                            <input autocomplete="current-password" class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="password" name="password" required="" type="password" />
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input class="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-900" id="remember-me" name="remember-me" type="checkbox" />
-                            <label class="ml-2 block text-sm text-gray-300" for="remember-me">
-                                Remember me
-                            </label>
-                        </div>
+                        <input autocomplete="current-password" class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="password" name="password" required type="password" />
                     </div>
                     <div>
-                        <button class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-purple-500 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed" type="submit">
+                        <button class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-purple-500 transition-colors duration-300 disabled:opacity-50" type="submit">
                             <span class="button-text">Weave Back In</span>
-                            <svg class="animate-spin h-5 w-5 text-white hidden button-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
+                            <svg class="animate-spin h-5 w-5 text-white hidden button-spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                         </button>
                     </div>
                 </form>
-                <p class="mt-6 text-center text-sm text-gray-400">
-                    No threads yet?
-                    <a class="font-medium text-purple-400 hover:text-purple-300" href="/sign-up.html">
-                        Create yours now.
-                    </a>
-                </p>
+                <p class="mt-6 text-center text-sm text-gray-400">No threads yet? <a class="font-medium text-purple-400 hover:text-purple-300" href="/sign-up.html">Create yours now.</a></p>
             </div>
         </main>
-        <footer class="relative z-10 w-full text-right py-4 px-4 sm:px-6 lg:px-8">
-            <p class="text-sm text-gray-400">Made By: Monika Pathak</p>
-        </footer>
+        <footer class="relative z-10 w-full text-right py-4 px-4 sm:px-6 lg:px-8"><p class="text-sm text-gray-400">Made By: Monika Pathak</p></footer>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/js/main.js"></script>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-  (async () => {
-    /* 1.  get public credentials  */
-    const { url, anon } = await fetch('/api/config').then(r => r.json());
-
-    /* 2.  create client  */
-    const supabase = supabase.createClient(url, anon);
-
-    /* 3.  wire the Google button  */
-    document.getElementById('google-signin-btn')
-            .addEventListener('click', () => {
-              supabase.auth.signInWithOAuth({ provider: 'google' });
-            });
-  })();
-</script>
-Pu
+    <script src="/js/main.js" type="module"></script>
 </body>
 </html>
-

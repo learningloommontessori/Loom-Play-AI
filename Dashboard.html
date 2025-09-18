@@ -59,9 +59,9 @@
                             <span class="material-symbols-outlined mr-3">lock_reset</span> Twist a Stronger Cord
                         </a>
                         <div class="border-t border-gray-700 my-1"></div>
-                        <a href="/log-out.html" class="w-full text-left flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white">
+                        <button id="logoutButton" class="w-full text-left flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white">
                             <span class="material-symbols-outlined mr-3">logout</span> Exit the Loom
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -70,57 +70,13 @@
             <div class="max-w-7xl w-full">
                 <h2 class="text-4xl sm:text-5xl font-extrabold leading-tight mb-12" id="user-name-main">Welcome, User</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                    <!-- Active Buttons -->
-                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center" href="/new-chat.html">
-                        <span class="material-symbols-outlined text-5xl mb-4">
-                            auto_stories
-                        </span>
-                        Weave a New Lesson
-                    </a>
-                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center" href="/history.html">
-                        <span class="material-symbols-outlined text-5xl mb-4">
-                            history
-                        </span>
-                        Threads of the Past
-                    </a>
-
-                    <!-- Disabled Buttons -->
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
-                        <span class="material-symbols-outlined text-5xl mb-4">
-                            event_note
-                        </span>
-                        Lesson Planner
-                        <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span>
-                    </div>
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
-                        <span class="material-symbols-outlined text-5xl mb-4">
-                            quiz
-                        </span>
-                        Assessment Generator
-                        <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span>
-                    </div>
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
-                        <span class="material-symbols-outlined text-5xl mb-4">
-                            edit_document
-                        </span>
-                        Worksheet Creator
-                         <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-.full">Coming Soon</span>
-                    </div>
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
-                        <span class="material-symbols-outlined text-5xl mb-4">
-                            calendar_view_week
-                        </span>
-                        Weekly Planner
-                         <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span>
-                    </div>
-                    
-                    <!-- Active Button -->
-                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center col-span-1 md:col-span-2 lg:col-span-1 xl:col-span-2" href="/collective-loom.html">
-                        <span class="material-symbols-outlined text-5xl mb-4">
-                            groups
-                        </span>
-                        The Collective Loom
-                    </a>
+                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center" href="/new-chat.html"><span class="material-symbols-outlined text-5xl mb-4">auto_stories</span>Weave a New Lesson</a>
+                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center" href="/history.html"><span class="material-symbols-outlined text-5xl mb-4">history</span>Threads of the Past</a>
+                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">event_note</span>Lesson Planner<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
+                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">quiz</span>Assessment Generator<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
+                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">edit_document</span>Worksheet Creator<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
+                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">calendar_view_week</span>Weekly Planner<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
+                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center col-span-1 md:col-span-2 lg:col-span-1 xl:col-span-2" href="/collective-loom.html"><span class="material-symbols-outlined text-5xl mb-4">groups</span>The Collective Loom</a>
                 </div>
             </div>
         </main>
@@ -128,7 +84,6 @@
             <p class="text-sm text-gray-400">Made By: Monika Pathak</p>
         </footer>
     </div>
-    <script type="module" src="js/dashboard.js"></script>
+    <script type="module" src="/js/dashboard.js"></script>
 </body>
 </html>
-
