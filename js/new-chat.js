@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkUser = async () => {
         const { data: { session } } = await _supabase.auth.getSession();
         if (!session) {
-            window.location.href = '/Sign In.html';
+            window.location.href = '/sign-in.html';
         } else {
             const user = session.user;
             const fullName = user.user_metadata?.full_name || user.email;
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await new Promise(resolve => setTimeout(resolve, 1500));
 
             // Redirect to the page that will display the results
-            window.location.href = '/Generation Page.html';
+            window.location.href = '/generation-page.html';
 
         } catch (error) {
             showMessage('An error occurred. Please try again.');

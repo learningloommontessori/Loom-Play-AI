@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Authentication & User Info Setup
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
-        window.location.href = '/Sign In.html'; // Redirect to sign-in if not logged in
+        window.location.href = '/sign-in.html'; // Redirect to sign-in if not logged in
         return;
     }
     const user = session.user;
@@ -114,7 +114,7 @@ function attachCardListeners() {
             if (error) return alert('Error fetching lesson data.');
             localStorage.setItem('currentLesson', JSON.stringify(data.lesson_data));
             localStorage.setItem('currentTopic', data.topic);
-            window.location.href = '/Generation Page.html';
+            window.location.href = '/generation-page.html';
         });
 
         card.querySelector('.share-btn').addEventListener('click', async (e) => {

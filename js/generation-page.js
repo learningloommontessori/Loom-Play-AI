@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Check user session
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
-        window.location.href = '/Sign In.html';
+        window.location.href = '/sign-in.html';
         return;
     }
 
@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const topic = localStorage.getItem('currentTopic');
     if (!topic) {
         alert('No topic found. Redirecting to start a new chat.');
-        window.location.href = '/New Chat.html';
+        window.location.href = '/new-chat.html';
         return;
     }
     

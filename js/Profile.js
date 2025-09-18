@@ -134,7 +134,7 @@ async function handleLogout() {
         console.error('Error logging out:', error);
         alert('Failed to log out. Please try again.');
     } else {
-        window.location.href = '/Sign In.html';
+        window.location.href = '/sign-in.html';
     }
 }
 
@@ -164,12 +164,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) {
         console.error("Error getting session:", error);
-        window.location.href = '/Sign In.html';
+        window.location.href = '/sign-in.html';
         return;
     }
     if (!session) {
         console.log("No active session found. Redirecting to sign in.");
-        window.location.href = '/Sign In.html';
+        window.location.href = '/sign-in.html';
         return;
     }
 

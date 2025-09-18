@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } else {
         // If no user is logged in, redirect to the Sign In page
-        window.location.href = '/Sign In.html';
+        window.location.href = '/sign-in.html';
         return; // Stop executing the rest of the script
     }
 

@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Authentication & User Info
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
-        window.location.href = '/Sign In.html';
+        window.location.href = '/sign-in.html';
         return;
     }
     const user = session.user;

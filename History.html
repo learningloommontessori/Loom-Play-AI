@@ -26,21 +26,21 @@
 <span class="material-symbols-outlined text-4xl hover:text-purple-300 transition-colors">menu</span>
 </button>
 <div @click.away="open = false" class="absolute left-0 mt-2 w-64 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-10" style="display: none;" x-show="open">
-<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Dashboard.html">
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/dashboard.html">
 <span class="material-symbols-outlined mr-3">dashboard</span> Dashboard
                             </a>
-<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/History.html">
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/history.html">
 <span class="material-symbols-outlined mr-3">history</span> Threads of the Past
                             </a>
-<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Community Hub.html">
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/collective-loom.html">
 <span class="material-symbols-outlined mr-3">groups</span> The Collective Loom
                             </a>
-<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/New Chat.html">
+<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/new-chat.html">
 <span class="material-symbols-outlined mr-3">add</span> Weave a New Lesson
                             </a>
 </div>
 </div>
-<a href="/Dashboard.html" class="text-2xl font-bold">Loom Play AI</a>
+<a href="/dashboard.html" class="text-2xl font-bold">Loom Play AI</a>
 </div>
 <div class="flex items-center">
 <div class="relative" x-data="{ open: false }">
@@ -49,10 +49,10 @@
 <span class="material-symbols-outlined text-4xl text-white hover:text-purple-300 transition-colors">account_circle</span>
 </button>
 <div @click.away="open = false" class="absolute right-0 mt-2 w-56 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-10" style="display: none;" x-show="open">
-<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Profile.html">
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/profile.html">
 <span class="material-symbols-outlined mr-3">account_circle</span> The Weaver
                         </a>
-<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/Change Password.html">
+<a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/change-password.html">
 <span class="material-symbols-outlined mr-3">password</span> Twist a Stronger Cord
                         </a>
 <button class="w-full text-left flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" id="logoutButton">
@@ -69,7 +69,7 @@
 <h2 class="text-3xl font-bold tracking-tight text-white">Your Woven Lessons</h2>
 <p class="text-gray-400 mt-1">Review, share, or delete your previously generated lesson plans.</p>
 </div>
-<a href="/New Chat.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300 flex items-center">
+<a href="/new-chat.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300 flex items-center">
 <span class="material-symbols-outlined mr-2">add</span> Weave a New Lesson
                     </a>
 </div>
@@ -96,7 +96,7 @@
         <span class="material-symbols-outlined text-7xl text-gray-500">history_edu</span>
         <h3 class="text-2xl font-bold mt-4">No Lessons Yet</h3>
         <p class="text-gray-400 mt-2">Start a new chat to weave your first lesson plan.</p>
-        <a href="/New Chat.html" class="mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300">
+        <a href="/new-chat.html" class="mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300">
             Create a New Lesson
         </a>
     </div>

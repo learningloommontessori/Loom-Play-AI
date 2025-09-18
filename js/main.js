@@ -46,8 +46,8 @@ async function initializeAuth() {
 
     // Redirect authenticated users to the dashboard.
     const { data: { session } } = await supabase.auth.getSession();
-    if (session && !window.location.pathname.includes('/Dashboard.html')) {
-        window.location.href = '/Dashboard.html';
+    if (session && !window.location.pathname.includes('/dashboard.html')) {
+        window.location.href = '/dashboard.html';
         return;
     }
 
@@ -58,7 +58,7 @@ async function initializeAuth() {
             const { error } = await supabase.auth.signInWithOAuth({ 
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/Dashboard.html`
+                    redirectTo: `${window.location.origin}/dashboard.html`
                 }
             });
             if (error) {
@@ -95,7 +95,7 @@ async function initializeAuth() {
             } else {
                 if (rememberMe) localStorage.setItem('rememberedEmail', email);
                 else localStorage.removeItem('rememberedEmail');
-                window.location.href = '/Dashboard.html';
+                window.location.href = '/dashboard.html';
             }
         });
     }
@@ -130,7 +130,7 @@ async function initializeAuth() {
                 password: password,
                 options: { 
                     data: { full_name: fullName },
-                    emailRedirectTo: `${window.location.origin}/Dashboard.html`
+                    emailRedirectTo: `${window.location.origin}/dashboard.html`
                 }
             });
 

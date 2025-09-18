@@ -26,7 +26,7 @@ function handleForgotPasswordPage(form) {
         setLoading(button, true);
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '/Reset Password.html',
+            redirectTo: window.location.origin + '/reset-password.html',
         });
 
         setLoading(button, false);
@@ -70,7 +70,7 @@ function handleResetPasswordPage(form) {
         } else {
             showSuccess('Your password has been reset successfully! You will be redirected to sign in shortly.');
             setTimeout(() => {
-                window.location.href = '/Sign In.html';
+                window.location.href = '/sign-in.html';
             }, 4000);
         }
     });
