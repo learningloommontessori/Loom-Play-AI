@@ -55,7 +55,12 @@ async function initializeAuth() {
     const googleSignInBtn = document.getElementById('google-signin-btn');
     if (googleSignInBtn) {
         googleSignInBtn.addEventListener('click', async () => {
-            const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+            const { error } = await supabase.auth.signInWithOAuth({ 
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/Dashboard.html`
+                }
+            });
             if (error) {
                 showErrorMessage('Could not sign in with Google. Please try again.');
             }
@@ -123,7 +128,10 @@ async function initializeAuth() {
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: password,
-                options: { data: { full_name: fullName } }
+                options: { 
+                    data: { full_name: fullName },
+                    emailRedirectTo: `${window.location.origin}/Dashboard.html`
+                }
             });
 
             buttonText.classList.remove('hidden');
