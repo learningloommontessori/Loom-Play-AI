@@ -35,21 +35,13 @@ async function initializeAuth() {
     const supabase = await getSupabase();
     if (!supabase) {
         showErrorMessage('Could not connect to authentication service. Please check your connection or contact support.');
-        // Disable all form inputs and buttons to prevent user interaction if Supabase fails
         document.querySelectorAll('form').forEach(form => {
             [...form.elements].forEach(el => el.disabled = true);
         });
-        document.getElementById('google-signin-btn')?.setAttribute('disabled', true);
+        document.getElementById('google-signin-btn')?.setAttribute('disabled', 'true');
         return;
     }
     console.log('Supabase client initialized.');
-
-    // Redirect authenticated users to the dashboard.
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session && !window.location.pathname.includes('/dashboard.html')) {
-        window.location.href = '/dashboard.html';
-        return;
-    }
 
     // --- GOOGLE OAUTH ---
     const googleSignInBtn = document.getElementById('google-signin-btn');
@@ -74,7 +66,6 @@ async function initializeAuth() {
             event.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const rememberMe = document.getElementById('remember-me').checked;
             const submitButton = signInForm.querySelector('button[type="submit"]');
             const buttonText = submitButton.querySelector('.button-text');
             const buttonSpinner = submitButton.querySelector('.button-spinner');
@@ -93,8 +84,6 @@ async function initializeAuth() {
             if (error) {
                 showErrorMessage(error.message);
             } else {
-                if (rememberMe) localStorage.setItem('rememberedEmail', email);
-                else localStorage.removeItem('rememberedEmail');
                 window.location.href = '/dashboard.html';
             }
         });
@@ -151,6 +140,23 @@ async function initializeAuth() {
 
 // --- SCRIPT EXECUTION ---
 document.addEventListener('DOMContentLoaded', () => {
-    initializeAuth();
+    // This check ensures that we don't try to redirect from the dashboard to itself.
+    if (!window.location.pathname.includes('/dashboard.html')) {
+        // We need to check for an existing session on non-dashboard pages to auto-login users.
+        getSupabase().then(supabase => {
+            if (supabase) {
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                    if (session) {
+                        window.location.href = '/dashboard.html';
+                    } else {
+                        initializeAuth();
+                    }
+                });
+            }
+        });
+    } else {
+        // On the dashboard, just initialize auth features (like logout) without redirecting.
+        initializeAuth();
+    }
 });
 
