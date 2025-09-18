@@ -102,8 +102,110 @@
 
     <footer class="relative z-10 w-full text-right py-4 px-4 sm:px-6 lg:px-8"><p class="text-sm text-gray-400">Made By: Monika Pathak</p></footer>
   </div>
+  
+  <!-- UI Interaction Script (runs immediately) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const signUpForm = document.getElementById('signUpForm');
+        if (!signUpForm) return; // Only run on the sign-up page
 
-  <!-- Main application script -->
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        const passwordMatchIcon = document.getElementById('password-match-icon');
+        const passwordMatchText = document.getElementById('password-match-text');
+        const strengthBar = document.getElementById('password-strength-bar');
+        const strengthText = document.getElementById('password-strength-text');
+        const lengthCheck = document.getElementById('length-check');
+        const caseCheck = document.getElementById('case-check');
+        const numberCheck = document.getElementById('number-check');
+        const termsCheckbox = document.getElementById('terms');
+        const submitButton = document.getElementById('submit-btn');
+        const submitWrapper = document.getElementById('submit-wrapper');
+        const tooltip = document.getElementById('tooltip');
+
+        // Password strength checker logic
+        passwordInput.addEventListener('input', () => {
+            const password = passwordInput.value;
+            let score = 0;
+            let strengthLabel = '';
+
+            const hasLength = password.length >= 8;
+            const hasMixedCase = /[a-z]/.test(password) && /[A-Z]/.test(password);
+            const hasNumberOrSymbol = /[\d\W]/.test(password);
+
+            lengthCheck.innerHTML = hasLength ? '✓ At least 8 characters' : 'At least 8 characters';
+            lengthCheck.className = hasLength ? 'text-green-400' : 'text-gray-400';
+            
+            caseCheck.innerHTML = hasMixedCase ? '✓ Mix of uppercase & lowercase' : 'Mix of uppercase & lowercase';
+            caseCheck.className = hasMixedCase ? 'text-green-400' : 'text-gray-400';
+
+            numberCheck.innerHTML = hasNumberOrSymbol ? '✓ At least one number or symbol' : 'At least one number or symbol';
+            numberCheck.className = hasNumberOrSymbol ? 'text-green-400' : 'text-gray-400';
+
+            if (hasLength) score++;
+            if (hasMixedCase) score++;
+            if (hasNumberOrSymbol) score++;
+
+            switch (score) {
+                case 1: strengthLabel = 'Weak'; strengthBar.style.width = '33%'; strengthBar.className = 'h-2 rounded-full bg-red-500 transition-all duration-300'; break;
+                case 2: strengthLabel = 'Medium'; strengthBar.style.width = '66%'; strengthBar.className = 'h-2 rounded-full bg-yellow-500 transition-all duration-300'; break;
+                case 3: strengthLabel = 'Strong'; strengthBar.style.width = '100%'; strengthBar.className = 'h-2 rounded-full bg-green-500 transition-all duration-300'; break;
+                default: strengthLabel = ''; strengthBar.style.width = '0%'; strengthBar.className = 'h-2 rounded-full transition-all duration-300'; break;
+            }
+            strengthText.textContent = strengthLabel;
+            strengthText.className = `text-xs font-medium ${score === 1 ? 'text-red-400' : score === 2 ? 'text-yellow-400' : score === 3 ? 'text-green-400' : 'text-gray-400'}`;
+        });
+        
+        // Password confirmation validation logic
+        const validatePasswords = () => {
+            const password = passwordInput.value;
+            const confirmPassword = confirmPasswordInput.value;
+            const successBorderClasses = 'border-green-500 focus:ring-green-500';
+            const errorBorderClasses = 'border-red-500 focus:ring-red-500';
+
+            if (confirmPassword.length === 0) {
+                passwordMatchIcon.classList.add('hidden');
+                passwordMatchText.classList.add('hidden');
+                confirmPasswordInput.classList.remove(...successBorderClasses.split(' '), ...errorBorderClasses.split(' '));
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                passwordMatchIcon.textContent = 'check_circle';
+                passwordMatchIcon.classList.remove('text-red-500', 'hidden');
+                passwordMatchIcon.classList.add('text-green-500');
+                passwordMatchText.textContent = 'Passwords match!';
+                passwordMatchText.classList.remove('text-red-400', 'hidden');
+                passwordMatchText.classList.add('text-green-400');
+                confirmPasswordInput.classList.remove(...errorBorderClasses.split(' '));
+                confirmPasswordInput.classList.add(...successBorderClasses.split(' '));
+            } else {
+                passwordMatchIcon.textContent = 'cancel';
+                passwordMatchIcon.classList.remove('text-green-500', 'hidden');
+                passwordMatchIcon.classList.add('text-red-500');
+                passwordMatchText.textContent = 'Passwords do not match.';
+                passwordMatchText.classList.remove('text-green-400', 'hidden');
+                passwordMatchText.classList.add('text-red-400');
+                confirmPasswordInput.classList.remove(...successBorderClasses.split(' '));
+                confirmPasswordInput.classList.add(...errorBorderClasses.split(' '));
+            }
+        };
+
+        passwordInput.addEventListener('input', validatePasswords);
+        confirmPasswordInput.addEventListener('input', validatePasswords);
+
+        // Terms and Conditions Checkbox Logic
+        termsCheckbox.addEventListener('input', () => {
+            submitButton.disabled = !termsCheckbox.checked;
+        });
+
+        // Tooltip logic for disabled button
+        submitWrapper.addEventListener('mouseover', () => { if (submitButton.disabled) tooltip.classList.remove('hidden'); });
+        submitWrapper.addEventListener('mouseout', () => { tooltip.classList.add('hidden'); });
+    });
+  </script>
+
+  <!-- Main application script (handles auth) -->
   <script src="/js/main.js" type="module"></script>
 
 </body>
