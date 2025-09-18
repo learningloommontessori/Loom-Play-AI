@@ -125,6 +125,18 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/js/main.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  (async () => {
+    if (window.supabase) return;                // already loaded
+    const { url, anon } = await fetch('/api/config').then(r => r.json());
+    window.supabase = supabase.createClient(url, anon);
+
+    /* page-specific auth code … */
+  })();
+</script>
+
 </body>
 </html>
 

@@ -105,6 +105,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+
 /* =========  SIGN-UP ONLY LOGIC  ========= */
 document.addEventListener('DOMContentLoaded', () => {
   if (!document.getElementById('signUpForm')) return;   // leave if not sign-up page
@@ -186,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* your existing Supabase submit logic here … */
   });
 });
+
 /* =========  GOOGLE SIGN-IN  ========= */
 async function handleGoogleSignIn() {
   const { error } = await supabase.auth.signInWithOAuth({
@@ -197,5 +199,17 @@ async function handleGoogleSignIn() {
 }
 document.getElementById('google-signin-btn').addEventListener('click', handleGoogleSignIn);
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  (async () => {
+    if (window.supabase) return;                // already loaded
+    const { url, anon } = await fetch('/api/config').then(r => r.json());
+    window.supabase = supabase.createClient(url, anon);
+
+    /* page-specific auth code … */
+  })();
+</script>
+
 </body>
 </html>

@@ -82,6 +82,22 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/index.js" defer></script>
+
+<script>
+      let supabase;                       // global so other pages can see it
+      (async () => {
+        const { url, anon } = await fetch('/api/config').then(r => r.json());
+        supabase = supabase.createClient(url, anon);
+
+        /* ----  landing-page only stuff  ---- */
+        if (document.getElementById('google-signin-btn')) {
+          document.getElementById('google-signin-btn')
+                  .addEventListener('click', () => 
+                      supabase.auth.signInWithOAuth({ provider: 'google' })
+                  );
+        }
+      })();
+    </script>
 </body>
 </html>
 
