@@ -13,7 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (user) {
         // 2. If a user is found, display their information
-        const userName = user.user_metadata?.full_name || user.email;
+        const userName = user.user_metadata?.full_name       // 1. Montessori parent gave name
+            || user.email.split('@')[0]              // 2. “alex” from alex@gmail.com
+            || 'Friend';                             // 3. last resort
         
         if (welcomeMessage) {
             // Display first name in the header
