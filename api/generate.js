@@ -55,10 +55,11 @@ export default async function handler(request) {
     return new Response(JSON.stringify({ error: 'API key is not configured.' }), { status: 500 });
   }
 
-  // This prompt now asks for a JSON object directly, which is more reliable.
+  // This prompt is now more robust to prevent JSON errors.
   const systemPrompt = `You are KinderSpark AI, a friendly and expert assistant for kindergarten teachers. Your purpose is to create complete, engaging, Montessori-inspired lesson plans for children aged 3-6.
   
-  Your response MUST be ONLY a valid JSON object. Do NOT use markdown or any other formatting.
+  Your response MUST be ONLY a valid JSON object. Do NOT use any markdown, comments, or any text outside of the JSON structure.
+  All strings within the JSON must be properly escaped (e.g., use \\" for quotes inside a string).
   The JSON object must follow this exact structure:
   {
     "newlyCreatedContent": {
@@ -113,11 +114,17 @@ export default async function handler(request) {
       return new Response(JSON.stringify({ error: 'AI returned an empty text response.' }), { status: 500 });
     }
     
-    // ---- FIX: Clean the AI's response before parsing ----
-    // This removes leading/trailing markdown backticks and whitespace that can break JSON.parse()
-    const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+    let lessonPlan;
+    try {
+        // First, clean the text of any markdown wrappers that might still appear.
+        const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+        lessonPlan = JSON.parse(cleanedText);
+    } catch (parseError) {
+        // If parsing fails, log the broken text for debugging and inform the user.
+        console.error("Failed to parse AI JSON response. Raw text:", generatedText);
+        throw new Error("AI returned invalid JSON format. Please try again.");
+    }
 
-    const lessonPlan = JSON.parse(cleanedText);
 
     // --- 2. Generate the image ---
     let imageUrl = null;
@@ -133,11 +140,7 @@ export default async function handler(request) {
 
   } catch (error) {
     console.error('Error in generate handler:', error);
-    // Provide a more specific error message back to the front-end if parsing fails
-    if (error instanceof SyntaxError) {
-        return new Response(JSON.stringify({ error: 'AI returned invalid JSON format. Please try again.' }), { status: 500 });
-    }
-    return new Response(JSON.stringify({ error: 'An internal server error occurred.' }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message || 'An internal server error occurred.' }), { status: 500 });
   }
 }
 
