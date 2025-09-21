@@ -71,6 +71,15 @@ export default async function handler(request) {
       "motorSkillsActivity": "An activity for fine or gross motor skills.",
       "sensoryExplorationActivity": "A sensory bin, nature walk, or simple science experiment."
     },
+    "movementAndMusic": {
+      "grossMotorActivity": "An activity for large muscle movements.",
+      "fineMotorActivity": "A separate activity for detailed hand-eye coordination.",
+      "actionSong": "A song with related physical movements."
+    },
+    "socialAndEmotionalLearning": {
+      "graceAndCourtesy": "A specific lesson on manners or social skills related to the topic.",
+      "problemSolvingScenario": "A short, age-appropriate scenario for discussion."
+    },
     "classicResources": {
       "familiarRhymesAndSongs": ["List of 2-3 classic children's songs or rhymes."],
       "classicStoryBooks": ["List of 2-3 popular children's books with authors."]
@@ -78,6 +87,10 @@ export default async function handler(request) {
     "montessoriConnections": {
       "traditionalUseOfMaterials": "Suggest 2-3 ways to use traditional Montessori materials.",
       "newWaysToUseMaterials": "Suggest 2-3 creative, non-traditional ways to use Montessori materials."
+    },
+    "teacherResources": {
+      "observationCues": "Specific things a teacher should look for to assess understanding.",
+      "environmentSetup": "How to prepare the classroom environment for this topic."
     },
     "imagePrompt": "A very simple 2-4 word phrase describing the core subject for a coloring page (e.g., 'friendly smiling sun', 'stack of books')."
   }`;
