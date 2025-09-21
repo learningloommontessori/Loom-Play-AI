@@ -107,13 +107,17 @@ export default async function handler(request) {
     }
     
     const textData = await textResponse.json();
-    const generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text;
+    let generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!generatedText) {
       return new Response(JSON.stringify({ error: 'AI returned an empty text response.' }), { status: 500 });
     }
+    
+    // ---- FIX: Clean the AI's response before parsing ----
+    // This removes leading/trailing markdown backticks and whitespace that can break JSON.parse()
+    const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-    const lessonPlan = JSON.parse(generatedText);
+    const lessonPlan = JSON.parse(cleanedText);
 
     // --- 2. Generate the image ---
     let imageUrl = null;
@@ -129,6 +133,10 @@ export default async function handler(request) {
 
   } catch (error) {
     console.error('Error in generate handler:', error);
+    // Provide a more specific error message back to the front-end if parsing fails
+    if (error instanceof SyntaxError) {
+        return new Response(JSON.stringify({ error: 'AI returned invalid JSON format. Please try again.' }), { status: 500 });
+    }
     return new Response(JSON.stringify({ error: 'An internal server error occurred.' }), { status: 500 });
   }
 }
