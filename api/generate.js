@@ -90,7 +90,7 @@ export default async function handler(request) {
       responseMimeType: "application/json",
       temperature: 0.8,
       // ** THE FIX **: Increased token limit to prevent truncated responses.
-      maxOutputTokens: 4096,
+      maxOutputTokens: 8192,
     },
   };
 
