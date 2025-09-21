@@ -151,7 +151,10 @@ function setupPageInteractions(user) {
 async function handleWordDownload() {
     if (!currentLessonData) return;
     
-    let fullHtmlContent = `<h1>Lesson: ${currentLessonData.topic}</h1>`;
+    let fullHtmlContent = `<h1>Lesson Plan: ${currentLessonData.topic}</h1>`;
+    fullHtmlContent += `<p>This plan includes new and classic resources, along with creative Montessori-inspired activities to explore ${currentLessonData.topic}.</p><hr>`;
+    
+    // This function now iterates through the structured data to build the document
     Object.values(currentLessonData.tabs).forEach(tab => {
         fullHtmlContent += `<h2>${tab.title}</h2>`;
         Object.values(tab.content).forEach(item => {
@@ -163,8 +166,8 @@ async function handleWordDownload() {
         const blob = await htmlToDocx(fullHtmlContent, null, { footer: true, pageNumber: true });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `${currentLessonData.topic}.docx`;
+a.href = url;
+        a.download = `Lesson Plan - ${currentLessonData.topic}.docx`;
         a.click();
         URL.revokeObjectURL(url);
     } catch (e) {
@@ -183,13 +186,15 @@ async function handlePdfDownload() {
     const addText = (text, size, isTitle = false) => {
         if (y > 280) { doc.addPage(); y = 15; }
         doc.setFontSize(size);
-        const plainText = new DOMParser().parseFromString(text, 'text/html').body.textContent || "";
+        // Basic HTML stripping for PDF generation
+        const plainText = new DOMParser().parseFromString(text.replace(/<br>/g, '\n').replace(/<li>/g, '\n* '), 'text/html').body.textContent || "";
         const splitText = doc.splitTextToSize(plainText, 180);
         doc.text(splitText, 10, y);
         y += (splitText.length * (size / 2.5)) + (isTitle ? 6 : 4);
     };
     
-    addText(`Lesson: ${currentLessonData.topic}`, 20, true);
+    addText(`Lesson Plan: ${currentLessonData.topic}`, 20, true);
+    
     Object.values(currentLessonData.tabs).forEach(tab => {
         addText(tab.title, 16, true);
         Object.values(tab.content).forEach(item => {
@@ -198,7 +203,7 @@ async function handlePdfDownload() {
         });
     });
     
-    doc.save(`${currentLessonData.topic}.pdf`);
+    doc.save(`Lesson Plan - ${currentLessonData.topic}.pdf`);
 }
 
 async function handleShareToHub(event, user) {
@@ -242,46 +247,64 @@ async function handleShareToHub(event, user) {
 
 // --- Mock Data and HTML Generation ---
 function createMockLessonData(topic) {
-    // This function now generates rich, Montessori-aligned content.
+    // This function generates content based on the "KinderSpark AI" persona.
     return {
         topic: topic,
         tabs: {
             story: {
-                title: "Story & Rhyme",
+                title: "Newly Created Content",
                 content: {
-                    rhyme: { title: "Original Rhyme", body: `<h3>A Rhyme for ${topic}</h3><p><em>(A simple, original rhyme about the topic)</em></p><p>The world is wide, with much to see,<br>Today we learn of ${topic}, you and me.<br>With careful hands and open eyes,<br>We find in learning a happy surprise.</p>` },
-                    story: { title: "Original Mini-Story", body: `<h3>The Little Explorer and the ${topic}</h3><p>Once, a child just like you found a special work on a shelf. It was all about ${topic}. At first, they watched, then they tried. Slowly and carefully, they practiced. It wasn't always easy, but with each try, their hands grew steadier and their mind grew calmer. Soon, they had mastered the work of ${topic}, and a quiet smile of accomplishment filled their heart. They learned that patience and practice could help them learn anything at all.</p>` },
+                    rhyme: { 
+                        title: "Original Rhyme", 
+                        body: `<h4>A Rhyme for ${topic}</h4><p>The world is wide, with much to see,<br>Today we learn of ${topic}, you and me.<br>With careful hands and open eyes,<br>We find in learning a happy surprise.</p>` 
+                    },
+                    story: { 
+                        title: "Original Mini-Story", 
+                        body: `<h4>The Little Explorer and the ${topic}</h4><p>Once, a child just like you found a special work on a shelf. It was all about ${topic}. At first, they watched, then they tried. Slowly and carefully, they practiced. It wasn't always easy, but with each try, their hands grew steadier and their mind grew calmer. Soon, they had mastered the work of ${topic}, and a quiet smile of accomplishment filled their heart. They learned that patience and practice could help them learn anything at all.</p>` 
+                    },
                 }
             },
             'hands-on': {
-                title: "Hands-On Activities",
+                title: "New Activities",
                 content: {
-                    art: { title: "Art/Craft Activity", body: `<h3>Creative ${topic}</h3><p>Provide materials for an open-ended art project related to ${topic}. For example, if the topic is 'leaves', provide leaves of different shapes, paper, and crayons for leaf rubbing. The focus should be on the process and exploration, not the final product.</p>` },
-                    motor: { title: "Motor Skills Activity", body: `<h3>Fine Motor Work with ${topic}</h3><p>Set up a tray with small objects related to the topic and tweezers or tongs. The child can practice their pincer grasp by transferring the objects from one bowl to another. This builds concentration and prepares the hand for writing.</p>`},
-                    sensory: { title: "Sensory/Exploration", body: `<h3>Exploring ${topic} with the Senses</h3><p>Create a sensory bin filled with items related to ${topic}. If the topic is 'shells', the bin could have sand, different types of shells, and a magnifying glass. This allows for free exploration and discovery, engaging the child's sense of touch and sight.</p>`},
+                    art: { 
+                        title: "Art/Craft Activity", 
+                        body: `<h4>Creative ${topic}</h4><p>Provide materials for an open-ended art project related to ${topic}. For example, if the topic is 'leaves', provide leaves of different shapes, paper, and crayons for leaf rubbing. The focus should be on the process and exploration, not the final product.</p>` 
+                    },
+                    motor: { 
+                        title: "Motor Skills Activity", 
+                        body: `<h4>Fine Motor Work with ${topic}</h4><p>Set up a tray with small objects related to the topic and tweezers or tongs. The child can practice their pincer grasp by transferring the objects from one bowl to another. This builds concentration and prepares the hand for writing.</p>`
+                    },
+                    sensory: { 
+                        title: "Sensory/Exploration Activity", 
+                        body: `<h4>Exploring ${topic} with the Senses</h4><p>Create a sensory bin filled with items related to ${topic}. If the topic is 'shells', the bin could have sand, different types of shells, and a magnifying glass. This allows for free exploration and discovery, engaging the child's sense of touch and sight.</p>`
+                    },
                 }
             },
-            movement: { title: "Movement", content: { 
-                activity: { title: "Gross Motor Activity", body: `<h3>Moving like a ${topic}</h3><p>Invent a game that involves moving the whole body. If the topic is 'birds', the children can practice 'flying' around the room with control, landing softly, and 'perching' on one leg to build balance and coordination.</p>` }
-            }},
+             teacher: { // Merged Classic Resources into Teacher's Corner
+                title: "Classic Resources",
+                content: {
+                    classic_resources: { 
+                        title: "Familiar Rhymes & Songs", 
+                        body: `<h4>Classic Songs for ${topic}</h4><p>Here are some well-known songs that can be adapted for your topic:</p><ul><li>"The Wheels on the Bus"</li><li>"Old MacDonald Had a Farm"</li><li>"Twinkle, Twinkle, Little Star"</li></ul>`
+                    },
+                     classic_books: {
+                        title: "Classic Story Books",
+                        body: `<h4>Great Books about ${topic}</h4><p>Look for these wonderful books at your local library:</p><ul><li><em>The Very Hungry Caterpillar</em> by Eric Carle</li><li><em>Brown Bear, Brown Bear, What Do You See?</em> by Bill Martin Jr.</li><li><em>Goodnight Moon</em> by Margaret Wise Brown</li></ul>`
+                    }
+                }
+            },
             exploration: {
                 title: "Montessori Connections",
                 content: {
-                    traditional: { title: "Traditional Materials", body: `<h3>Classic Montessori Work</h3><p>Connect the topic of ${topic} to a traditional material. For 'shapes', this would be the Geometric Cabinet. For 'numbers', the Sandpaper Numerals. Explain how the material isolates the concept you are teaching.</p><h4>Example Connection:</h4><ul><li><strong>Pink Tower:</strong> Discuss how it teaches size and dimension.</li><li><strong>Broad Stair:</strong> Explore concepts of thickness.</li><li><strong>Spooning/Pouring:</strong> Connect to practical life skills, coordination, and concentration.</li></ul>` },
-                    new_ways: { title: "New Ways to Use Materials", body: `<h3>Creative Extensions</h3><p>Think of a new way to use a classic material to teach ${topic}.</p><h4>Example Ideas:</h4><ul><li><strong>Pink Tower Color Match:</strong> Build the Pink Tower and have the child place a colored object on each cube.</li><li><strong>Metal Insets Rainbow Designs:</strong> Encourage children to trace a shape with one color, then trace it again slightly offset with another color.</li><li><strong>Sensorial Bin Scavenger Hunt:</strong> Hide tablets from the Color Boxes in a sensory bin filled with rice for the child to find and match.</li></ul>`},
-                }
-            },
-            printables: { title: "Printables", content: { 
-                worksheet: { title: "Matching Cards", body: `<h3>3-Part Cards for ${topic}</h3><p>Create a set of printable 3-part cards (picture card, label card, and control card) for the key vocabulary of the lesson. This is a classic Montessori reading activity that builds a child's vocabulary and classification skills.</p>` }
-            }},
-            parent: { title: "Parent Links", content: { 
-                home_activity: { title: "At-Home Connection", body: `<h3>Note for Parents</h3><p>Provide a brief, positive note for parents explaining what their child learned about ${topic} today. Suggest one simple, related activity they can do at home. For example: "Today, we practiced spooning beans! You can support this at home by inviting your child to help spoon ingredients while you are cooking." This builds a strong school-home connection.</p>` }
-            }},
-            teacher: {
-                title: "Teacher's Corner",
-                content: {
-                    classic_resources: { title: "Classic Resources", body: `<h3>Familiar Books & Songs</h3><p>List well-known, high-quality children's books and songs that relate to the topic of ${topic}.</p><h4>Book Ideas:</h4><ul><li><em>The Very Hungry Caterpillar</em> by Eric Carle (for numbers, days of the week)</li><li><em>Brown Bear, Brown Bear, What Do You See?</em> by Bill Martin Jr. (for colors, animals)</li></ul><h4>Song Ideas:</h4><ul><li>"Old MacDonald Had a Farm"</li><li>"The Wheels on the Bus"</li></ul>`},
-                    observation: { title: "Observation Points", body: `<h3>What to Look For</h3><p>When observing the child working with ${topic}, note their level of: </p><ul><li><strong>Concentration:</strong> Is the child able to focus on the task for a period of time?</li><li><strong>Coordination:</strong> How is their control of movement?</li><li><strong>Independence:</strong> Are they able to complete the work cycle without assistance?</li><li><strong>Satisfaction:</strong> Does the child seem pleased with their effort?</li></ul><p>These observations will help you decide what lesson to present next.</p>` }
+                    traditional: { 
+                        title: "Traditional Use of Materials", 
+                        body: `<h4>Classic Montessori Work for ${topic}</h4><p>Connect your topic to traditional materials to isolate the key concepts:</p><ul><li><strong>Practical Life:</strong> Use pouring, spooning, or sorting activities with items related to ${topic}.</li><li><strong>Sensorial:</strong> Use the Geometric Cabinet for shapes, or the Color Tablets for colors.</li><li><strong>Language:</strong> Use Sandpaper Letters to introduce the beginning sound of key vocabulary for ${topic}.</li></ul>` 
+                    },
+                    new_ways: { 
+                        title: "New Ways to Use Materials", 
+                        body: `<h4>Creative Extensions for ${topic}</h4><p>Use classic materials in a new way to deepen understanding:</p><ul><li><strong>Pink Tower & a Ball:</strong> Roll a small ball down a ramp and see how many pink tower cubes it can knock over. This introduces physics in a simple, playful way.</li><li><strong>Number Rods & Nature:</strong> Take the number rods outside and match them to objects you find, like one long stick for the 10-rod or three small pebbles for the 3-rod.</li></ul>`
+                    },
                 }
             },
         }
@@ -293,7 +316,20 @@ function createTabsHtml(data) {
     let html = '';
     let isFirstTab = true;
 
-    for (const tabKey in data.tabs) {
+    // Use a pre-defined order for tabs to ensure consistency
+    const tabOrder = ['story', 'hands-on', 'teacher', 'exploration'];
+
+    // Map keys to the display names you want on the tabs
+    const tabDisplayNames = {
+        'story': 'Newly Created Content',
+        'hands-on': 'New Activities',
+        'teacher': 'Classic Resources',
+        'exploration': 'Montessori Connections'
+    };
+
+    for (const tabKey of tabOrder) {
+        if (!data.tabs[tabKey]) continue; // Skip if data for a tab doesn't exist
+        
         const tabData = data.tabs[tabKey];
         html += `<div class="tab-content ${isFirstTab ? 'active-tab-content' : ''}" id="${tabKey}-content">`;
         html += `<div class="flex items-center justify-between mb-6">`;
@@ -324,9 +360,26 @@ function createTabsHtml(data) {
         isFirstTab = false;
     }
 
+    // Generate the navigation HTML based on the same order and display names
+    let navHtml = '';
+    isFirstTab = true;
+    for(const tabKey of tabOrder) {
+        if (!data.tabs[tabKey]) continue;
+        navHtml += `<a class="whitespace-nowrap py-3 px-4 font-medium text-base text-gray-300 hover:bg-purple-800/40 hover:text-white flex items-center rounded-lg transition-colors duration-200 ${isFirstTab ? 'active-tab' : ''}" data-tab="${tabKey}" href="#">
+            <span class="material-symbols-outlined mr-3">${getIconForTab(tabKey)}</span>${tabDisplayNames[tabKey]}
+        </a>`;
+        isFirstTab = false;
+    }
+    // We need to inject this navHtml back into the main page, this function can't do it directly.
+    // The main generation-page.html needs to have its nav updated, or we do it with JS here.
+    // Let's do it with JS.
+    const navContainer = document.querySelector('nav[aria-label="Tabs"]');
+    if(navContainer) navContainer.innerHTML = navHtml;
+
+
     return `
         <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-gray-700">
-            <h3 class="text-3xl font-bold" id="lesson-title">Lesson: ${data.topic}</h3>
+            <h3 class="text-3xl font-bold" id="lesson-title">Topic: ${data.topic}</h3>
             <div class="flex items-center space-x-3">
                 <button id="word-btn" class="flex items-center text-sm bg-gray-800/60 hover:bg-purple-800/60 border border-gray-600 hover:border-purple-600 text-white font-medium py-2 px-3 rounded-md transition-colors duration-200">
                     <span class="material-symbols-outlined mr-2">description</span> Word
@@ -336,6 +389,18 @@ function createTabsHtml(data) {
                 </button>
             </div>
         </div>
+        <p class="mb-6 text-gray-300">This plan includes new and classic resources, along with creative Montessori-inspired activities to explore ${data.topic}.</p>
     ` + html;
+}
+
+function getIconForTab(tabKey) {
+    const icons = {
+        story: 'auto_stories',
+        'hands-on': 'pan_tool',
+        teacher: 'school',
+        exploration: 'eco',
+        // Add other icons if needed
+    };
+    return icons[tabKey] || 'help';
 }
 
