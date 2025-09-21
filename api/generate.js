@@ -58,7 +58,7 @@ export default async function handler(request) {
   // This prompt is now more robust to prevent JSON errors.
   const systemPrompt = `You are KinderSpark AI, a friendly and expert assistant for kindergarten teachers. Your purpose is to create complete, engaging, Montessori-inspired lesson plans for children aged 3-6.
   
-  Your response MUST be ONLY a valid JSON object. Do NOT use any markdown, comments, or any text outside of the JSON structure.
+  Your response MUST be ONLY a valid JSON object. Do NOT use any markdown, comments, or any text outside of the JSON structure. Ensure the final JSON is complete and not truncated.
   All strings within the JSON must be properly escaped (e.g., use \\" for quotes inside a string, and \\n for newlines).
   The JSON object must follow this exact structure:
   {
@@ -89,7 +89,8 @@ export default async function handler(request) {
     generationConfig: {
       responseMimeType: "application/json",
       temperature: 0.8,
-      maxOutputTokens: 2048,
+      // ** THE FIX **: Increased token limit to prevent truncated responses.
+      maxOutputTokens: 4096,
     },
   };
 
@@ -118,7 +119,7 @@ export default async function handler(request) {
     try {
         // First, clean the text of any markdown wrappers.
         const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
-        // ** THE FIX **: Replace unescaped newlines within the string with their escaped version.
+        // Second, replace unescaped newlines within the string with their escaped version.
         const validJsonString = cleanedText.replace(/\n/g, '\\n');
         lessonPlan = JSON.parse(validJsonString);
     } catch (parseError) {
