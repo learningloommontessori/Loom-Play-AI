@@ -67,10 +67,10 @@
                         <span class="material-symbols-outlined text-4xl">account_circle</span>
                     </button>
                     <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-64 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-20" style="display: none;">
-                        <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="#">
+                        <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/profile.html">
                             <span class="material-symbols-outlined mr-3">account_circle</span> The Weaver
                         </a>
-                        <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="#">
+                        <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/change-password.html">
                             <span class="material-symbols-outlined mr-3">lock_reset</span> Twist a Stronger Cord
                         </a>
                         <div class="border-t border-gray-700 my-1"></div>
@@ -105,7 +105,7 @@
                     
                     <!-- Tab Content Area -->
                     <div class="w-3/4 pl-8" id="content-container">
-                        <!-- Content will be dynamically inserted here by generation.js -->
+                        <!-- Content will be dynamically inserted here -->
                     </div>
                 </div>
             </div>
@@ -121,10 +121,7 @@
     <!-- JS Libraries for Exporting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
-
-    <!-- Supabase and Custom Logic -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/generation.js"></script>
+    
+    <script type="module" src="js/generation-page.js"></script>
 </body>
 </html>
-

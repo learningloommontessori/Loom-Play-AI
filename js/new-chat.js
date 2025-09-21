@@ -1,115 +1,84 @@
-document.addEventListener('DOMContentLoaded', () => {
+import getSupabase from './supabaseClient.js';
 
-    // --- SUPABASE INITIALIZATION ---
-    // Make sure to replace these with your actual Supabase project URL and Key
-    import supabase from './supabaseClient.js';
+// --- Helper function to set the loading state on the submit button ---
+function setLoadingState(form, isLoading) {
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (!submitButton) return;
 
-    console.log('Supabase client initialized for new chat page.');
+    const buttonTexts = submitButton.querySelectorAll('.button-text');
+    const spinner = submitButton.querySelector('.button-spinner');
 
-    const userNameHeader = document.getElementById('user-name-header');
-    const logoutBtn = document.getElementById('logout-btn');
+    submitButton.disabled = isLoading;
+    buttonTexts.forEach(text => text.classList.toggle('hidden', isLoading));
+    if (spinner) spinner.classList.toggle('hidden', !isLoading);
+}
+
+
+// --- Main Page Logic ---
+document.addEventListener('DOMContentLoaded', async () => {
+    const supabase = await getSupabase();
+
+    // --- Page Elements ---
+    const welcomeMessage = document.getElementById('welcome-message');
+    const logoutButton = document.getElementById('logoutButton');
     const generatorForm = document.getElementById('generator-form');
-    const errorMessageContainer = document.getElementById('error-message');
+    const errorMessage = document.getElementById('error-message');
     const errorText = document.getElementById('error-text');
-    
-    // --- UTILITY FUNCTIONS ---
-    
-    const showMessage = (message, isError = true) => {
-        errorText.textContent = message;
-        if (isError) {
-            errorMessageContainer.classList.remove('hidden');
-        } else {
-             // You can create a success message style if needed
-             errorMessageContainer.classList.remove('hidden');
+
+    // 1. Authenticate and Protect Page
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+        // Personalize the header
+        const userName = user.user_metadata?.full_name || user.email;
+        if (welcomeMessage) {
+            welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;
+            welcomeMessage.classList.remove('hidden');
         }
-    };
-
-    const hideMessage = () => {
-        errorMessageContainer.classList.add('hidden');
-    };
-
-
-    /**
-     * Checks user authentication state and updates UI.
-     * Redirects to sign-in page if user is not logged in.
-     */
-    const checkUser = async () => {
-        const { data: { session } } = await _supabase.auth.getSession();
-        if (!session) {
-            window.location.href = '/sign-in.html';
-        } else {
-            const user = session.user;
-            const fullName = user.user_metadata?.full_name || user.email;
-            if (userNameHeader) {
-                userNameHeader.textContent = `Welcome, ${fullName}!`;
-            }
-        }
-    };
-
-    /**
-     * Handles user logout.
-     */
-    const handleLogout = async () => {
-        await _supabase.auth.signOut();
-        window.location.href = '/index.html';
-    };
-
-    /**
-     * Handles the submission of the topic generation form.
-     */
-    const handleGeneratorSubmit = async (event) => {
-        event.preventDefault();
-        hideMessage(); // Hide previous errors
-        
-        const submitButton = generatorForm.querySelector('button[type="submit"]');
-        const buttonTexts = submitButton.querySelectorAll('.button-text');
-        const buttonSpinner = submitButton.querySelector('.button-spinner');
-
-        const formData = new FormData(generatorForm);
-        const topic = formData.get('topic').trim();
-        
-        if (!topic) {
-            showMessage("Please enter a topic to continue.");
-            return;
-        }
-
-        // Show loading state
-        submitButton.disabled = true;
-        buttonTexts.forEach(t => t.classList.add('hidden'));
-        buttonSpinner.classList.remove('hidden');
-
-        try {
-            // --- This is where you would call your AI backend ---
-            // For now, we will simulate this by saving the topic and redirecting.
-            console.log(`Simulating generation for topic:`, topic);
-            
-            // Save the user's topic to local storage
-            localStorage.setItem('generationTopic', topic);
-
-            // Simulate a short delay to show the spinner
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Redirect to the page that will display the results
-            window.location.href = '/generation-page.html';
-
-        } catch (error) {
-            showMessage('An error occurred. Please try again.');
-            console.error('Generation error:', error);
-            
-            // Hide loading state on error
-            submitButton.disabled = false;
-            buttonTexts.forEach(t => t.classList.remove('hidden'));
-            buttonSpinner.classList.add('hidden');
-        }
-    };
-
-    // --- EVENT LISTENERS ---
-    checkUser();
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
+    } else {
+        // Redirect to sign-in if no user is found
+        window.location.href = '/sign-in.html';
+        return;
     }
+    
+    // 2. Set up Logout Button
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/index.html';
+        });
+    }
+
+    // 3. Handle Topic Form Submission
     if (generatorForm) {
-        generatorForm.addEventListener('submit', handleGeneratorSubmit);
+        generatorForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            
+            // Hide any previous errors
+            if(errorMessage) errorMessage.classList.add('hidden');
+
+            const topicInput = generatorForm.topic;
+            const topic = topicInput.value.trim();
+
+            if (!topic) {
+                if(errorMessage && errorText) {
+                    errorText.textContent = "Please enter a topic to continue.";
+                    errorMessage.classList.remove('hidden');
+                }
+                return;
+            }
+
+            // Show loading spinner
+            setLoadingState(generatorForm, true);
+
+            // Store the topic in sessionStorage. This is better than localStorage
+            // as it automatically clears when the browser tab is closed.
+            sessionStorage.setItem('currentTopic', topic);
+
+            // Redirect to the generation page after a short delay to show the spinner
+            setTimeout(() => {
+                window.location.href = '/generation-page.html';
+            }, 500);
+        });
     }
 });
-
