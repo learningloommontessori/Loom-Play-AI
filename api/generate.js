@@ -89,7 +89,6 @@ export default async function handler(request) {
     generationConfig: {
       responseMimeType: "application/json",
       temperature: 0.8,
-      // ** THE FIX **: Increased token limit to prevent truncated responses.
       maxOutputTokens: 8192,
     },
   };
@@ -117,11 +116,10 @@ export default async function handler(request) {
     
     let lessonPlan;
     try {
-        // First, clean the text of any markdown wrappers.
-        const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
-        // Second, replace unescaped newlines within the string with their escaped version.
-        const validJsonString = cleanedText.replace(/\n/g, '\\n');
-        lessonPlan = JSON.parse(validJsonString);
+        // ** THE FIX **: We only need to remove potential markdown wrappers.
+        // The AI is returning valid, multi-line JSON, and we should not modify its structure further.
+        const jsonText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+        lessonPlan = JSON.parse(jsonText);
     } catch (parseError) {
         // If parsing fails, log the broken text for debugging and inform the user.
         console.error("Failed to parse AI JSON response. Raw text:", generatedText);
