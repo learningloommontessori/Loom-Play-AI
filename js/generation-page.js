@@ -54,8 +54,7 @@ async function generateAndDisplayContent(topic, user) {
     // Simulate AI generation with a delay
     await new Promise(resolve => setTimeout(resolve, 2000)); 
 
-    // In a real application, you would make an API call to your AI backend here.
-    // For now, we'll use a function that creates detailed mock data.
+    // Use the new, more detailed mock data function
     currentLessonData = createMockLessonData(topic);
 
     // Save the generated lesson to the database
@@ -242,34 +241,53 @@ async function handleShareToHub(event, user) {
 }
 
 // --- Mock Data and HTML Generation ---
-// In a real app, this data would come from your AI model
 function createMockLessonData(topic) {
+    // This function now generates rich, Montessori-aligned content.
     return {
         topic: topic,
         tabs: {
             story: {
                 title: "Story & Rhyme",
                 content: {
-                    learning_story: { title: "Learning Story", body: `<h3>The Great ${topic} Adventure</h3><p>Once upon a time, in a bright and sunny Montessori classroom, a small child discovered the wonder of ${topic}. With focused eyes and careful hands, they explored its texture, shape, and purpose. The child learned about concentration, order, and the deep satisfaction of independent work.</p>` },
-                    rhyme: { title: "Rhyme", body: `<h4>A Little Song for ${topic}</h4><p><em>(To the tune of "Twinkle, Twinkle, Little Star")</em><br>Steady hands and quiet feet,<br>Learning ${topic}, oh what a treat.<br>I can do it, yes it's true,<br>Watch me now, and you can too.<br>Steady hands and quiet feet,<br>My new lesson is complete.</p>` },
-                    vocab: { title: "Key Vocabulary", body: `<ul><li class="mb-2"><strong>Focus:</strong> To pay close attention to something.</li><li class="mb-2"><strong>Explore:</strong> To learn about something by trying it.</li><li class="mb-2"><strong>Independent:</strong> Doing things by yourself.</li><li><strong>Control:</strong> The power to manage your own actions and movements.</li></ul>` },
+                    rhyme: { title: "Original Rhyme", body: `<h3>A Rhyme for ${topic}</h3><p><em>(A simple, original rhyme about the topic)</em></p><p>The world is wide, with much to see,<br>Today we learn of ${topic}, you and me.<br>With careful hands and open eyes,<br>We find in learning a happy surprise.</p>` },
+                    story: { title: "Original Mini-Story", body: `<h3>The Little Explorer and the ${topic}</h3><p>Once, a child just like you found a special work on a shelf. It was all about ${topic}. At first, they watched, then they tried. Slowly and carefully, they practiced. It wasn't always easy, but with each try, their hands grew steadier and their mind grew calmer. Soon, they had mastered the work of ${topic}, and a quiet smile of accomplishment filled their heart. They learned that patience and practice could help them learn anything at all.</p>` },
                 }
             },
             'hands-on': {
                 title: "Hands-On Activities",
                 content: {
-                    practical: { title: "Practical Life", body: `<p>Set up a small tray with all the materials needed for a ${topic} activity. Demonstrate the steps slowly and without words. Invite the child to have a turn, emphasizing careful movements and returning materials to their proper place.</p>`},
-                    sensorial: { title: "Sensorial", body: `<p>Provide different variations of the ${topic} materials. If it's pouring, use different sized pitchers. If it's sorting, use objects of different colors and textures. This allows the child to refine their senses while practicing the skill.</p>`},
+                    art: { title: "Art/Craft Activity", body: `<h3>Creative ${topic}</h3><p>Provide materials for an open-ended art project related to ${topic}. For example, if the topic is 'leaves', provide leaves of different shapes, paper, and crayons for leaf rubbing. The focus should be on the process and exploration, not the final product.</p>` },
+                    motor: { title: "Motor Skills Activity", body: `<h3>Fine Motor Work with ${topic}</h3><p>Set up a tray with small objects related to the topic and tweezers or tongs. The child can practice their pincer grasp by transferring the objects from one bowl to another. This builds concentration and prepares the hand for writing.</p>`},
+                    sensory: { title: "Sensory/Exploration", body: `<h3>Exploring ${topic} with the Senses</h3><p>Create a sensory bin filled with items related to ${topic}. If the topic is 'shells', the bin could have sand, different types of shells, and a magnifying glass. This allows for free exploration and discovery, engaging the child's sense of touch and sight.</p>`},
                 }
             },
-            movement: { title: "Movement", content: { activity: { title: "Gross Motor Activity", body: "<p>Create a game related to the topic. For example, if the topic is 'washing hands', have the children pretend to be little water droplets wiggling down a stream before they 'splash' into a basin. This connects the physical activity to the lesson's purpose.</p>" }}},
-            exploration: { title: "Exploration", content: { nature: { title: "Nature's Connection", body: "<p>Take the lesson outside. If the topic is 'leaves', go on a nature walk to find different kinds of leaves. This helps the child connect the classroom lesson to the world around them.</p>"}}},
-            printables: { title: "Printables", content: { worksheet: { title: "Matching Cards", body: "<p>Create a set of printable cards with pictures related to the lesson. One set has the picture and the word, the other just the picture. The child can match the picture to the picture, and later, the word to the picture, building pre-reading skills.</p>"}}},
-            parent: { title: "Parent Links", content: { home_activity: { title: "At-Home Connection", body: "<p>Create a short, simple note for parents explaining the new skill the child is learning, like 'Today we practiced pouring!'. Suggest a simple way they can incorporate this at home, such as letting the child pour their own milk from a small pitcher. This reinforces the lesson and involves the family.</p>"}}},
-            teacher: { title: "Teacher's Corner", content: { observation: { title: "Observation Points", body: "<p>When observing the child with this lesson, look for: level of concentration, ability to complete the work cycle (take out, use, put away), control of error, and expressions of satisfaction. These observations will guide your next steps for this child.</p>"}}},
+            movement: { title: "Movement", content: { 
+                activity: { title: "Gross Motor Activity", body: `<h3>Moving like a ${topic}</h3><p>Invent a game that involves moving the whole body. If the topic is 'birds', the children can practice 'flying' around the room with control, landing softly, and 'perching' on one leg to build balance and coordination.</p>` }
+            }},
+            exploration: {
+                title: "Montessori Connections",
+                content: {
+                    traditional: { title: "Traditional Materials", body: `<h3>Classic Montessori Work</h3><p>Connect the topic of ${topic} to a traditional material. For 'shapes', this would be the Geometric Cabinet. For 'numbers', the Sandpaper Numerals. Explain how the material isolates the concept you are teaching.</p><h4>Example Connection:</h4><ul><li><strong>Pink Tower:</strong> Discuss how it teaches size and dimension.</li><li><strong>Broad Stair:</strong> Explore concepts of thickness.</li><li><strong>Spooning/Pouring:</strong> Connect to practical life skills, coordination, and concentration.</li></ul>` },
+                    new_ways: { title: "New Ways to Use Materials", body: `<h3>Creative Extensions</h3><p>Think of a new way to use a classic material to teach ${topic}.</p><h4>Example Ideas:</h4><ul><li><strong>Pink Tower Color Match:</strong> Build the Pink Tower and have the child place a colored object on each cube.</li><li><strong>Metal Insets Rainbow Designs:</strong> Encourage children to trace a shape with one color, then trace it again slightly offset with another color.</li><li><strong>Sensorial Bin Scavenger Hunt:</strong> Hide tablets from the Color Boxes in a sensory bin filled with rice for the child to find and match.</li></ul>`},
+                }
+            },
+            printables: { title: "Printables", content: { 
+                worksheet: { title: "Matching Cards", body: `<h3>3-Part Cards for ${topic}</h3><p>Create a set of printable 3-part cards (picture card, label card, and control card) for the key vocabulary of the lesson. This is a classic Montessori reading activity that builds a child's vocabulary and classification skills.</p>` }
+            }},
+            parent: { title: "Parent Links", content: { 
+                home_activity: { title: "At-Home Connection", body: `<h3>Note for Parents</h3><p>Provide a brief, positive note for parents explaining what their child learned about ${topic} today. Suggest one simple, related activity they can do at home. For example: "Today, we practiced spooning beans! You can support this at home by inviting your child to help spoon ingredients while you are cooking." This builds a strong school-home connection.</p>` }
+            }},
+            teacher: {
+                title: "Teacher's Corner",
+                content: {
+                    classic_resources: { title: "Classic Resources", body: `<h3>Familiar Books & Songs</h3><p>List well-known, high-quality children's books and songs that relate to the topic of ${topic}.</p><h4>Book Ideas:</h4><ul><li><em>The Very Hungry Caterpillar</em> by Eric Carle (for numbers, days of the week)</li><li><em>Brown Bear, Brown Bear, What Do You See?</em> by Bill Martin Jr. (for colors, animals)</li></ul><h4>Song Ideas:</h4><ul><li>"Old MacDonald Had a Farm"</li><li>"The Wheels on the Bus"</li></ul>`},
+                    observation: { title: "Observation Points", body: `<h3>What to Look For</h3><p>When observing the child working with ${topic}, note their level of: </p><ul><li><strong>Concentration:</strong> Is the child able to focus on the task for a period of time?</li><li><strong>Coordination:</strong> How is their control of movement?</li><li><strong>Independence:</strong> Are they able to complete the work cycle without assistance?</li><li><strong>Satisfaction:</strong> Does the child seem pleased with their effort?</li></ul><p>These observations will help you decide what lesson to present next.</p>` }
+                }
+            },
         }
     };
 }
+
 
 function createTabsHtml(data) {
     let html = '';
@@ -320,3 +338,4 @@ function createTabsHtml(data) {
         </div>
     ` + html;
 }
+
