@@ -34,7 +34,7 @@
                         <a class="flex items-center px-4 py-3 text-sm font-bold text-white bg-purple-600" href="/new-chat.html">
                             <span class="material-symbols-outlined mr-3">add</span> Weave a New Lesson
                         </a>
-                        <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/History.html">
+                        <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/history.html">
                             <span class="material-symbols-outlined mr-3">history</span> Threads of the Past
                         </a>
                         <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/collective-loom.html">
@@ -74,7 +74,6 @@
                 </a>
                 <h2 class="text-4xl sm:text-5xl font-extrabold leading-tight mb-8">Spin a New Thread of Learning</h2>
                 
-                <!-- Error Message Container -->
                 <div id="error-message" class="hidden bg-red-900/50 border border-red-500 rounded-md p-3 mb-6">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -92,6 +91,21 @@
                         <input id="topic" name="topic" type="text" required class="w-full py-3 px-4 bg-gray-800/60 border border-purple-500 rounded-lg text-white placeholder-gray-400 focus:ring-purple-400 focus:border-purple-400 text-lg" placeholder="e.g., Practical life: Pouring water" />
                     </div>
                     
+                    <!-- ** THE FIX **: Language selector added -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Choose Generation Language</label>
+                        <fieldset class="flex space-x-4">
+                            <label for="lang-en" class="flex items-center space-x-2 text-white cursor-pointer">
+                                <input type="radio" id="lang-en" name="language" value="English" class="h-4 w-4 text-purple-600 bg-gray-700 border-gray-500 focus:ring-purple-500" checked>
+                                <span>English</span>
+                            </label>
+                            <label for="lang-hi" class="flex items-center space-x-2 text-white cursor-pointer">
+                                <input type="radio" id="lang-hi" name="language" value="Hindi" class="h-4 w-4 text-purple-600 bg-gray-700 border-gray-500 focus:ring-purple-500">
+                                <span>Hindi</span>
+                            </label>
+                        </fieldset>
+                    </div>
+
                     <div class="text-center pt-4">
                          <button class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center w-full sm:w-auto sm:min-w-[200px] mx-auto" type="submit" id="generate-btn">
                             <span class="material-symbols-outlined align-middle mr-2 button-text">
@@ -111,3 +125,4 @@
     <script type="module" src="js/new-chat.js"></script>
 </body>
 </html>
+

@@ -1,85 +1,53 @@
 // Path: /api/generate.js
+import { createClient } from '@supabase/supabase-js';
 
-// This is a Vercel Edge Function. It is fast and does not require installing dependencies,
-// aligning with your final package.json.
 export const config = {
   runtime: 'edge',
 };
 
-// --- Main function that handles requests to this endpoint ---
 export default async function handler(request) {
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { 
-        status: 405, 
-        headers: { 'Content-Type': 'application/json' } 
+        status: 405, headers: { 'Content-Type': 'application/json' } 
     });
   }
 
   try {
-    const { topic } = await request.json();
+    // --- 1. GET DATA, LANGUAGE, AND AUTHENTICATE ---
+    const { topic, language } = await request.json(); // Get language from request
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+        return new Response(JSON.stringify({ error: 'Authentication token is required.' }), { status: 401 });
+    }
+    
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+        return new Response(JSON.stringify({ error: 'Invalid or expired user session.' }), { status: 401 });
+    }
+
+    // --- 2. GENERATE LESSON PLAN ---
     const geminiApiKey = process.env.GEMINI_API_KEY;
-
-    if (!topic) {
-      return new Response(JSON.stringify({ error: 'Topic is required.' }), { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    if (!geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'API key is not configured on the server.' }), { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-      });
+    if (!topic || !geminiApiKey) {
+        return new Response(JSON.stringify({ error: 'Topic and API Key are required.' }), { status: 400 });
     }
 
+    // Modify the prompt to include the selected language.
     const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers specializing in the Montessori method for children aged 3-6.
   
-    Your response MUST be ONLY a valid, complete JSON object. Do NOT use markdown or any text outside the JSON structure.
-    All strings within the JSON must be properly escaped.
-    For 'classicStoryBooks', provide the title and author. For 'familiarRhymesAndSongs', provide just the title.
+    Your response MUST be ONLY a valid, complete JSON object, translated entirely into the requested language: ${language}. Do NOT use markdown. All strings must be properly escaped.
+    For 'classicStoryBooks', provide title and author. For 'familiarRhymesAndSongs', provide just the title.
     The JSON object must follow this exact structure:
-    {
-      "newlyCreatedContent": {
-        "originalRhyme": "A simple, 4-8 line rhyming poem.",
-        "originalMiniStory": "A short, simple story (3-5 paragraphs)."
-      },
-      "newActivities": {
-        "artCraftActivity": "A creative, hands-on art project.",
-        "motorSkillsActivity": "An activity for fine or gross motor skills.",
-        "sensoryExplorationActivity": "A sensory bin, nature walk, or simple science experiment."
-      },
-      "movementAndMusic": {
-          "grossMotorActivity": "An activity for large muscle movements.",
-          "fineMotorActivity": "An activity for hand-eye coordination.",
-          "actionSong": "A song that involves physical actions."
-      },
-      "socialAndEmotionalLearning": {
-          "graceAndCourtesy": "A lesson on manners or social skills.",
-          "problemSolvingScenario": "A short, age-appropriate scenario to discuss."
-      },
-      "classicResources": {
-        "familiarRhymesAndSongs": ["Title of a classic song.", "Title of another classic song."],
-        "classicStoryBooks": ["'Book Title' by Author Name", "'Another Book Title' by Author Name"]
-      },
-      "montessoriConnections": {
-        "traditionalUseOfMaterials": "Suggest 2-3 ways to use traditional Montessori materials.",
-        "newWaysToUseMaterials": "Suggest 2-3 creative ways to use Montessori materials."
-      },
-      "teacherResources": {
-          "observationCues": "Things a teacher should look for to assess understanding.",
-          "environmentSetup": "How to prepare the classroom for this topic."
-      }
-    }`;
-
+    {"newlyCreatedContent":{"originalRhyme": "...", "originalMiniStory": "..."},"newActivities":{"artCraftActivity": "...", "motorSkillsActivity": "...", "sensoryExplorationActivity": "..."},"movementAndMusic":{"grossMotorActivity": "...", "fineMotorActivity": "...", "actionSong": "..."},"socialAndEmotionalLearning":{"graceAndCourtesy": "...", "problemSolvingScenario": "..."},"classicResources":{"familiarRhymesAndSongs": ["..."], "classicStoryBooks": ["..."]},"montessoriConnections":{"traditionalUseOfMaterials": "...", "newWaysToUseMaterials": "..."},"teacherResources":{"observationCues": "...", "environmentSetup": "..."}}`;
+    
     const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
     const textPayload = {
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: `Topic: ${topic}` }] }],
-        generationConfig: {
-            responseMimeType: "application/json",
-            temperature: 0.8,
-            maxOutputTokens: 8192,
-        },
+        generationConfig: { responseMimeType: "application/json", temperature: 0.8, maxOutputTokens: 8192 },
     };
     
     const textApiResponse = await fetch(textApiUrl, {
@@ -89,8 +57,6 @@ export default async function handler(request) {
     });
 
     if (!textApiResponse.ok) {
-        const errorBody = await textApiResponse.text();
-        console.error('Gemini Text API Error:', errorBody);
         throw new Error('Failed to generate lesson plan from AI.');
     }
     
@@ -101,17 +67,22 @@ export default async function handler(request) {
         throw new Error('AI returned an empty text response.');
     }
     
-    let lessonPlan;
-    try {
-        // A minimal cleaning step is still good practice.
-        const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
-        lessonPlan = JSON.parse(cleanedText);
-    } catch (parseError) {
-        console.error("Failed to parse AI JSON response. Raw text:", generatedText);
-        throw new Error("AI returned an invalid JSON format.");
-    }
+    const lessonPlan = JSON.parse(generatedText.replace(/```json/g, '').replace(/```/g, '').trim());
 
-    // Return only the lesson plan, no image.
+    // --- 3. SAVE TO DATABASE (now includes language) ---
+    const { error: dbError } = await supabase
+      .from('lessons')
+      .insert([{
+          user_id: user.id,
+          topic: topic,
+          lesson_data: lessonPlan,
+          language: language // Save the language
+      }]);
+
+    if (dbError) {
+        console.error('Supabase DB Insert Error:', dbError);
+    }
+    
     return new Response(JSON.stringify({ lessonPlan }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
