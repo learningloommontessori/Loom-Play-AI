@@ -1,30 +1,59 @@
 // Path: /api/generate.js
-// This is a Vercel Edge Function that calls Google's AI for text generation.
-export const config = {
-  runtime: 'edge',
-};
 
-export default async function handler(request) {
-  const { topic } = await request.json();
-  const geminiApiKey = process.env.GEMINI_API_KEY;
+// This is a Vercel Node.js Function. It uses axios for robust ClipDrop API calls.
+import axios from 'axios';
+import FormData from 'form-data';
 
-  if (!topic) {
-    return new Response(JSON.stringify({ error: 'Topic is required.' }), { status: 400 });
-  }
-  if (!geminiApiKey) {
-    return new Response(JSON.stringify({ error: 'API key is not configured.' }), { status: 500 });
-  }
+// --- Helper function to generate an image with ClipDrop ---
+async function generateImageWithClipDrop(prompt, apiKey) {
+    const formData = new FormData();
+    formData.append('prompt', `A simple, bold outlines, cartoon-style coloring page for a 4-year-old child about: ${prompt}`);
 
-  // This prompt asks for a reliable JSON response without image-related fields.
-  const systemPrompt = `You are KinderSpark AI, a friendly and expert assistant for kindergarten teachers. Your purpose is to create complete, engaging, Montessori-inspired lesson plans for children aged 3-6.
+    try {
+        const response = await axios.post('https://api.clipdrop.co/text-to-image/v1', formData, {
+            headers: {
+                ...formData.getHeaders(),
+                'x-api-key': apiKey,
+            },
+            responseType: 'arraybuffer',
+        });
+        
+        const base64Image = Buffer.from(response.data).toString('base64');
+        return `data:image/png;base64,${base64Image}`;
+
+    } catch (error) {
+        console.error('ClipDrop API Error:', error.response ? error.response.data.toString() : error.message);
+        return null;
+    }
+}
+
+// --- Main function that handles requests to this endpoint ---
+export default async function handler(request, response) {
+    if (request.method !== 'POST') {
+        return response.status(405).json({ error: 'Method Not Allowed' });
+    }
+
+    const { topic } = request.body;
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    const clipdropApiKey = process.env.CLIPDROP_API_KEY;
+
+    if (!topic) {
+        return response.status(400).json({ error: 'Topic is required.' });
+    }
+    if (!geminiApiKey || !clipdropApiKey) {
+        return response.status(500).json({ error: 'API keys are not configured on the server.' });
+    }
+    
+    const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers specializing in the Montessori method for children aged 3-6.
   
-  Your response MUST be ONLY a valid JSON object. Do NOT use any markdown, comments, or any text outside of the JSON structure.
+  Your response MUST be ONLY a valid, complete JSON object. Do NOT use markdown or any text outside the JSON structure.
   All strings within the JSON must be properly escaped.
+  For 'classicStoryBooks', provide the title and author. For 'familiarRhymesAndSongs', provide just the title.
   The JSON object must follow this exact structure:
   {
     "newlyCreatedContent": {
-      "originalRhyme": "A simple, 4-8 line rhyming poem about the topic.",
-      "originalMiniStory": "A short, simple story (3-5 paragraphs) with a positive message."
+      "originalRhyme": "A simple, 4-8 line rhyming poem.",
+      "originalMiniStory": "A short, simple story (3-5 paragraphs)."
     },
     "newActivities": {
       "artCraftActivity": "A creative, hands-on art project.",
@@ -32,77 +61,78 @@ export default async function handler(request) {
       "sensoryExplorationActivity": "A sensory bin, nature walk, or simple science experiment."
     },
     "movementAndMusic": {
-        "grossMotorActivity": "An activity focused on large muscle movements like running, jumping, or balancing.",
-        "fineMotorActivity": "An activity for hand-eye coordination and small muscle skills.",
-        "actionSong": "A specific song that involves physical actions and following directions."
+        "grossMotorActivity": "An activity for large muscle movements.",
+        "fineMotorActivity": "An activity for hand-eye coordination.",
+        "actionSong": "A song that involves physical actions."
     },
     "socialAndEmotionalLearning": {
-        "graceAndCourtesy": "A specific lesson on manners, interacting with others, or classroom etiquette related to the topic.",
-        "problemSolvingScenario": "A short, age-appropriate scenario for children to discuss and solve, related to the topic."
+        "graceAndCourtesy": "A lesson on manners or social skills.",
+        "problemSolvingScenario": "A short, age-appropriate scenario to discuss."
     },
     "classicResources": {
-      "familiarRhymesAndSongs": ["List 2-3 classic children's songs or rhymes. Provide titles that are easily searchable."],
-      "classicStoryBooks": ["List 2-3 popular children's books with authors. Provide titles that are easily searchable."]
+      "familiarRhymesAndSongs": ["Title of a classic song.", "Title of another classic song."],
+      "classicStoryBooks": ["'Book Title' by Author Name", "'Another Book Title' by Author Name"]
     },
     "montessoriConnections": {
       "traditionalUseOfMaterials": "Suggest 2-3 ways to use traditional Montessori materials.",
-      "newWaysToUseMaterials": "Suggest 2-3 creative, non-traditional ways to use Montessori materials."
+      "newWaysToUseMaterials": "Suggest 2-3 creative ways to use Montessori materials."
     },
     "teacherResources": {
-        "observationCues": "Specific things a teacher should look for to assess a child's understanding and engagement with the material.",
-        "environmentSetup": "How to prepare the classroom environment or a specific shelf to introduce the topic."
-    }
+        "observationCues": "Things a teacher should look for to assess understanding.",
+        "environmentSetup": "How to prepare the classroom for this topic."
+    },
+    "imagePrompt": "A simple 2-4 word phrase for a coloring page (e.g., 'happy smiling sun')."
   }`;
 
-  const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
-  const textPayload = {
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ parts: [{ text: `Topic: ${topic}` }] }],
-    generationConfig: {
-      responseMimeType: "application/json",
-      temperature: 0.8,
-      maxOutputTokens: 8192,
-    },
-  };
-
-  try {
-    const textResponse = await fetch(textApiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(textPayload),
-    });
-
-    if (!textResponse.ok) {
-      const errorBody = await textResponse.text();
-      console.error('Gemini Text API Error:', errorBody);
-      return new Response(JSON.stringify({ error: 'Failed to generate lesson plan.' }), { status: 500 });
-    }
-    
-    const textData = await textResponse.json();
-    let generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!generatedText) {
-      return new Response(JSON.stringify({ error: 'AI returned an empty text response.' }), { status: 500 });
-    }
-    
-    let lessonPlan;
     try {
-        // Only perform the most minimal cleaning necessary.
-        const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
-        lessonPlan = JSON.parse(cleanedText);
-    } catch (parseError) {
-        console.error("Failed to parse AI JSON response. Raw text:", generatedText);
-        throw new Error("AI returned invalid JSON format. Please try again.");
+        const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${geminiApiKey}`;
+        const textPayload = {
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ parts: [{ text: `Topic: ${topic}` }] }],
+            generationConfig: {
+                responseMimeType: "application/json",
+                temperature: 0.8,
+                maxOutputTokens: 8192,
+            },
+        };
+        
+        const textApiResponse = await fetch(textApiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(textPayload),
+        });
+
+        if (!textApiResponse.ok) {
+            const errorBody = await textApiResponse.text();
+            console.error('Gemini Text API Error:', errorBody);
+            throw new Error('Failed to generate lesson plan from AI.');
+        }
+        
+        const textData = await textApiResponse.json();
+        const generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!generatedText) {
+            throw new Error('AI returned an empty text response.');
+        }
+        
+        let lessonPlan;
+        try {
+            const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+            lessonPlan = JSON.parse(cleanedText);
+        } catch (parseError) {
+            console.error("Failed to parse AI JSON response. Raw text:", generatedText);
+            throw new Error("AI returned invalid JSON format. Please try again.");
+        }
+
+        let imageUrl = null;
+        if (lessonPlan.imagePrompt) {
+            imageUrl = await generateImageWithClipDrop(lessonPlan.imagePrompt, clipdropApiKey);
+        }
+        
+        return response.status(200).json({ lessonPlan, imageUrl });
+
+    } catch (error) {
+        console.error('Error in generate handler:', error);
+        return response.status(500).json({ error: error.message || 'An internal server error occurred.' });
     }
-    
-    return new Response(JSON.stringify({ lessonPlan }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Error in generate handler:', error);
-    return new Response(JSON.stringify({ error: error.message || 'An internal server error occurred.' }), { status: 500 });
-  }
 }
-
