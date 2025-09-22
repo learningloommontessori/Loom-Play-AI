@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
+    console.log("Fetching lessons for user:", user.id);
     fetchAndDisplayLessons(user.id);
 
     const searchInput = document.getElementById('search-input');
@@ -46,10 +47,10 @@ async function fetchAndDisplayLessons(userId) {
     const emptyState = document.getElementById('empty-state');
 
     loader.style.display = 'flex';
-    grid.style.display = 'grid'; 
+    grid.innerHTML = ''; // Clear previous content
     emptyState.style.display = 'none';
 
-    // Fetch from the correct 'AIGeneratedContent' table
+    console.log("Querying 'AIGeneratedContent' table from Supabase...");
     let { data: lessons, error } = await supabase
         .from('AIGeneratedContent')
         .select('id, created_at, topic, language, content_json')
@@ -58,16 +59,22 @@ async function fetchAndDisplayLessons(userId) {
 
     loader.style.display = 'none';
 
+    // ** THE FIX **: Added detailed logging to debug the fetch operation.
     if (error) {
-        console.error('Error fetching lessons:', error);
-        grid.innerHTML = `<p class="text-red-400 col-span-full text-center">Could not fetch your history. Please try again later.</p>`;
+        console.error('Error fetching lessons from Supabase:', error);
+        grid.innerHTML = `<p class="text-red-400 col-span-full text-center">Error: Could not fetch your history. ${error.message}</p>`;
         return;
     }
+
+    console.log("Supabase response received. Number of lessons:", lessons ? lessons.length : 0);
+    console.log("Lessons data:", lessons);
+
 
     if (!lessons || lessons.length === 0) {
         grid.style.display = 'none';
         emptyState.style.display = 'flex';
     } else {
+        grid.style.display = 'grid';
         grid.innerHTML = lessons.map(lesson => createLessonCard(lesson)).join('');
         attachCardListeners();
     }
@@ -138,7 +145,6 @@ async function handleViewLesson(event) {
     modalContent.innerHTML = ''; 
     modalContent.appendChild(modalLoader);
     
-    // Fetch from 'AIGeneratedContent'
     const { data, error } = await supabase.from('AIGeneratedContent').select('content_json').eq('id', lessonId).single();
 
     modalLoader.style.display = 'none';
@@ -181,7 +187,6 @@ async function handleDeleteLesson(event) {
     const topic = card.dataset.topic;
 
     if (window.confirm(`Are you sure you want to delete the lesson "${topic}"? This cannot be undone.`)) {
-        // Delete from 'AIGeneratedContent'
         const { error } = await supabase.from('AIGeneratedContent').delete().eq('id', lessonId);
         if (error) {
             console.error("Error deleting lesson:", error);
