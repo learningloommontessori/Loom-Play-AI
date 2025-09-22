@@ -24,7 +24,7 @@ function populateProfile(user) {
     document.getElementById('full_name').value = user.user_metadata?.full_name || '';
     document.getElementById('email').value = email;
     document.getElementById('bio').value = user.user_metadata?.bio || '';
-    document.getElementById('welcome-message').textContent = `Welcome, ${fullName}`;
+    document.getElementById('welcome-message').textContent = `Welcome, ${fullName.split(' ')[0]}!`;
 
     const memberSinceElement = document.getElementById('member_since');
     if (user.created_at) {
@@ -41,6 +41,41 @@ function populateProfile(user) {
     }
     console.log("Profile population complete.");
 }
+
+/**
+ * Displays a custom modal for confirmations.
+ * @param {string} message - The message to display in the modal.
+ * @returns {Promise<boolean>} - A promise that resolves to true if confirmed, false otherwise.
+ */
+function showConfirmationModal(message) {
+    return new Promise((resolve) => {
+        const modalHtml = `
+            <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+                <div class="bg-gray-800 rounded-lg p-8 shadow-xl max-w-sm w-full">
+                    <p class="text-white text-lg mb-6">${message}</p>
+                    <div class="flex justify-end space-x-4">
+                        <button id="modal-cancel" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">Cancel</button>
+                        <button id="modal-confirm" class="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-md transition duration-300">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        const confirmBtn = document.getElementById('modal-confirm');
+        const cancelBtn = document.getElementById('modal-cancel');
+        const modal = document.getElementById('confirmation-modal');
+
+        const closeModal = (result) => {
+            modal.remove();
+            resolve(result);
+        };
+
+        confirmBtn.onclick = () => closeModal(true);
+        cancelBtn.onclick = () => closeModal(false);
+    });
+}
+
 
 /**
  * Handles the profile picture upload process.
@@ -107,8 +142,15 @@ async function handleProfileUpdate(event) {
     const fullName = form.full_name.value;
     const bio = form.bio.value;
 
+    // ** THE FIX **: Merge new data with existing metadata to prevent overwriting.
+    const newMetaData = {
+        ...currentUser.user_metadata,
+        full_name: fullName,
+        bio: bio,
+    };
+
     const { data, error } = await supabase.auth.updateUser({
-        data: { full_name: fullName, bio: bio }
+        data: newMetaData
     });
 
     buttonText.classList.remove('hidden');
@@ -142,10 +184,11 @@ async function handleLogout() {
  * Handles the logic for deleting a user's profile.
  */
 async function handleProfileDelete() {
-    const confirmation = confirm('Are you sure you want to delete your profile? This action is permanent and cannot be undone.');
-    if (confirmation) {
-        alert("For security, profile deletion must be done through a server function. This is a placeholder. You will now be logged out.");
-        console.log("User confirmed profile deletion. Simulating logout.");
+    const confirmed = await showConfirmationModal('Are you sure you want to delete your profile? This action is permanent and cannot be undone.');
+    if (confirmed) {
+        // Since we cannot securely delete a user from the client-side,
+        // we will log them out as a placeholder action.
+        console.log("User confirmed profile deletion. Logging out.");
         await handleLogout();
     }
 }
@@ -186,4 +229,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     editPicBtn.addEventListener('click', () => avatarInput.click());
     avatarInput.addEventListener('change', handleAvatarUpload);
 });
+
 
