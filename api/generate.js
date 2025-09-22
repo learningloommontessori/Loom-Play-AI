@@ -1,43 +1,45 @@
 // Path: /api/generate.js
 
-// This is a Vercel Edge Function that calls Google's AI for both text and images.
+// This is a Vercel Edge Function that calls two AIs: Google for text and ClipDrop for images.
 export const config = {
   runtime: 'edge',
 };
 
-// --- Helper function to generate an image with Imagen ---
-async function generateImage(prompt, apiKey) {
-  const imageUrlEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
-  const payload = {
-    instances: [{
-      // We enhance the prompt to get a simple, coloring-page style image.
-      prompt: `A simple, bold outlines, cartoon-style coloring page for a 4-year-old child about: ${prompt}`
-    }],
-    parameters: { "sampleCount": 1 }
-  };
+// --- Helper function to generate an image with ClipDrop ---
+async function generateImageWithClipDrop(prompt, apiKey) {
+  // FormData is available globally in the Vercel Edge Runtime
+  const formData = new FormData();
+  // We enhance the prompt to get a simple, coloring-page style image
+  formData.append('prompt', `A simple, bold outlines, cartoon-style coloring page for a 4-year-old child about: ${prompt}`);
 
   try {
-    const response = await fetch(imageUrlEndpoint, {
+    const response = await fetch('https://api.clipdrop.co/text-to-image/v1', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: { 'x-api-key': apiKey },
+      body: formData,
     });
 
     if (!response.ok) {
-        const errorBody = await response.text();
-        console.error('Imagen API Error:', errorBody);
-        return null; // Return null on failure
+      const errorBody = await response.text();
+      console.error('ClipDrop API Error:', errorBody);
+      return null; // Return null on failure
     }
 
-    const result = await response.json();
-    if (result.predictions && result.predictions[0]?.bytesBase64Encoded) {
-      // Return the image as a data URL
-      return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-    }
-    return null;
+    // The response is the image itself, so we read it as a blob
+    const imageBlob = await response.blob();
+    
+    // We need to convert the blob to a base64 data URL to send it in JSON
+    const reader = new FileReader();
+    const base64Promise = new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageBlob);
+    });
+    
+    return await base64Promise;
 
   } catch (error) {
-    console.error('Error calling Imagen API:', error);
+    console.error('Error calling ClipDrop API:', error);
     return null;
   }
 }
@@ -47,19 +49,20 @@ async function generateImage(prompt, apiKey) {
 export default async function handler(request) {
   const { topic } = await request.json();
   const geminiApiKey = process.env.GEMINI_API_KEY;
+  const clipdropApiKey = process.env.CLIPDROP_API_KEY;
+
 
   if (!topic) {
     return new Response(JSON.stringify({ error: 'Topic is required.' }), { status: 400 });
   }
-  if (!geminiApiKey) {
-    return new Response(JSON.stringify({ error: 'API key is not configured.' }), { status: 500 });
+  if (!geminiApiKey || !clipdropApiKey) {
+    return new Response(JSON.stringify({ error: 'An API key is not configured on the server.' }), { status: 500 });
   }
 
-  // This prompt is now more robust to prevent JSON errors.
+  // This prompt instructs the AI to return a reliable JSON object, including a prompt for the image.
   const systemPrompt = `You are KinderSpark AI, a friendly and expert assistant for kindergarten teachers. Your purpose is to create complete, engaging, Montessori-inspired lesson plans for children aged 3-6.
   
-  Your response MUST be ONLY a valid JSON object. Do NOT use any markdown, comments, or any text outside of the JSON structure. Ensure the final JSON is complete and not truncated.
-  All strings within the JSON must be properly escaped (e.g., use \\" for quotes inside a string, and \\n for newlines).
+  Your response MUST be ONLY a valid JSON object. Do NOT use any markdown.
   The JSON object must follow this exact structure:
   {
     "newlyCreatedContent": {
@@ -71,15 +74,6 @@ export default async function handler(request) {
       "motorSkillsActivity": "An activity for fine or gross motor skills.",
       "sensoryExplorationActivity": "A sensory bin, nature walk, or simple science experiment."
     },
-    "movementAndMusic": {
-      "grossMotorActivity": "An activity for large muscle movements.",
-      "fineMotorActivity": "A separate activity for detailed hand-eye coordination.",
-      "actionSong": "A song with related physical movements."
-    },
-    "socialAndEmotionalLearning": {
-      "graceAndCourtesy": "A specific lesson on manners or social skills related to the topic.",
-      "problemSolvingScenario": "A short, age-appropriate scenario for discussion."
-    },
     "classicResources": {
       "familiarRhymesAndSongs": ["List of 2-3 classic children's songs or rhymes."],
       "classicStoryBooks": ["List of 2-3 popular children's books with authors."]
@@ -88,9 +82,18 @@ export default async function handler(request) {
       "traditionalUseOfMaterials": "Suggest 2-3 ways to use traditional Montessori materials.",
       "newWaysToUseMaterials": "Suggest 2-3 creative, non-traditional ways to use Montessori materials."
     },
+    "movementAndMusic": {
+      "grossMotorActivity": "An activity for large muscle movements.",
+      "fineMotorActivity": "An activity for hand-eye coordination.",
+      "actionSong": "A song with related physical actions."
+    },
+    "socialAndEmotionalLearning": {
+      "graceAndCourtesy": "A lesson on manners or interacting with others.",
+      "problemSolvingScenario": "A short, age-appropriate scenario to discuss."
+    },
     "teacherResources": {
       "observationCues": "Specific things a teacher should look for to assess understanding.",
-      "environmentSetup": "How to prepare the classroom environment for this topic."
+      "environmentSetup": "How to prepare the classroom for this topic."
     },
     "imagePrompt": "A very simple 2-4 word phrase describing the core subject for a coloring page (e.g., 'friendly smiling sun', 'stack of books')."
   }`;
@@ -129,21 +132,17 @@ export default async function handler(request) {
     
     let lessonPlan;
     try {
-        // ** THE FIX **: We only need to remove potential markdown wrappers.
-        // The AI is returning valid, multi-line JSON, and we should not modify its structure further.
-        const jsonText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
-        lessonPlan = JSON.parse(jsonText);
+        const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
+        lessonPlan = JSON.parse(cleanedText);
     } catch (parseError) {
-        // If parsing fails, log the broken text for debugging and inform the user.
         console.error("Failed to parse AI JSON response. Raw text:", generatedText);
         throw new Error("AI returned invalid JSON format. Please try again.");
     }
 
-
-    // --- 2. Generate the image ---
+    // --- 2. Generate the image using ClipDrop ---
     let imageUrl = null;
     if (lessonPlan.imagePrompt) {
-      imageUrl = await generateImage(lessonPlan.imagePrompt, geminiApiKey);
+      imageUrl = await generateImageWithClipDrop(lessonPlan.imagePrompt, clipdropApiKey);
     }
     
     // --- 3. Send both back to the client ---

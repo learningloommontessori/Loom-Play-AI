@@ -1,18 +1,22 @@
 // js/generation-page.js
 import getSupabase from './supabaseClient.js';
 
+let supabase;
+let currentUserSession;
+let currentLessonData = null; // Global holder for the raw lesson data
+let currentTopic = '';
+
 // --- Main Page Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    const supabase = await getSupabase();
+    supabase = await getSupabase();
     
-    // 1. Check user session and protect the page
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
         window.location.href = '/sign-in.html';
         return;
     }
+    currentUserSession = session;
 
-    // 2. Personalize header and set up logout
     const user = session.user;
     const userName = user.user_metadata?.full_name || user.email;
     document.getElementById('welcome-message').textContent = `Welcome, ${userName.split(' ')[0]}!`;
@@ -22,22 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/index.html';
     });
     
-    // 3. Retrieve topic from the previous page
-    const topic = localStorage.getItem('currentTopic');
-    if (!topic) {
+    currentTopic = localStorage.getItem('currentTopic');
+    if (!currentTopic) {
         alert('No topic found. Redirecting to start a new lesson.');
         window.location.href = '/new-chat.html';
         return;
     }
     
-    // 4. Setup tab interactions immediately
     setupTabInteractions();
-    
-    // 5. Start the AI content generation process
-    generateAndDisplayContent(topic, session.access_token);
+    generateAndDisplayContent(currentTopic, session.access_token);
 });
 
-// --- Content Generation and Display ---
+// --- API Call and Content Display ---
 async function generateAndDisplayContent(topic, token) {
     const loader = document.getElementById('loader');
     const mainContent = document.getElementById('main-content');
@@ -48,10 +48,7 @@ async function generateAndDisplayContent(topic, token) {
     try {
         const response = await fetch('/api/generate', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ topic }),
         });
 
@@ -61,63 +58,101 @@ async function generateAndDisplayContent(topic, token) {
         }
 
         const { lessonPlan, imageUrl } = await response.json();
+        currentLessonData = lessonPlan; // Store for export functions
         
         populatePage(lessonPlan, imageUrl, topic);
 
     } catch (err) {
         console.error('Error fetching generated content:', err);
-        loader.innerHTML = `<div class="text-center"><p class="text-red-400 text-lg">Sorry, something went wrong generating the lesson.</p><p class="text-gray-400 text-sm mt-2">${err.message}</p><a href="/new-chat.html" class="mt-4 inline-block bg-purple-600 text-white px-4 py-2 rounded-lg">Start Over</a></div>`;
+        loader.innerHTML = `<div class="text-center"><p class="text-red-400 text-lg">Sorry, something went wrong.</p><p class="text-gray-400 text-sm mt-2">${err.message}</p><a href="/new-chat.html" class="mt-4 inline-block bg-purple-600 text-white px-4 py-2 rounded-lg">Try Again</a></div>`;
     }
 }
 
+// --- DOM Population ---
 function populatePage(lessonPlan, imageUrl, topic) {
     const mainContent = document.getElementById('main-content');
-    const contentHeader = document.getElementById('content-header');
-    
-    // 1. Populate the header with the title and image
-    contentHeader.innerHTML = `
-        <div class="flex flex-col sm:flex-row items-start justify-between mb-6 pb-4 border-b border-gray-700">
+
+    // 1. Populate the Generated Image Tab
+    const imageContainer = document.getElementById('generatedImage-content');
+    if (imageUrl) {
+        imageContainer.innerHTML = `
+            <div class="flex flex-col items-center">
+                 <h2 class="text-2xl font-bold mb-4">Generated Coloring Page</h2>
+                 <img src="${imageUrl}" alt="Generated coloring page for ${topic}" class="w-full max-w-md h-auto rounded-lg border-2 border-purple-500 shadow-lg">
+                 <a href="${imageUrl}" download="${topic}-coloring-page.png" class="mt-4 inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
+                    <span class="material-symbols-outlined mr-2">download</span>
+                    Download Image
+                 </a>
+            </div>
+        `;
+    } else {
+        imageContainer.innerHTML = `<p class="text-gray-400 text-center">No image could be generated for this topic.</p>`;
+    }
+
+    // 2. Build the main header with action buttons
+    const headerHtml = `
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-gray-700">
             <div>
                 <h2 class="text-3xl font-bold" id="lesson-title">Topic: ${topic}</h2>
-                <p class="mt-2 text-gray-400">This plan includes new and classic resources, along with creative Montessori-inspired activities to explore ${topic}.</p>
+                <p class="mt-1 text-gray-400">This plan includes new and classic resources to explore ${topic}.</p>
             </div>
-            ${imageUrl ? `<img src="${imageUrl}" alt="Generated coloring page for ${topic}" class="w-full mt-4 sm:mt-0 sm:w-48 h-auto rounded-lg border-2 border-purple-500 shadow-lg">` : ''}
+            <div class="flex items-center space-x-2 mt-4 sm:mt-0">
+                <button id="word-btn" class="flex items-center text-sm bg-gray-800/60 hover:bg-purple-800/60 border border-gray-600 hover:border-purple-600 text-white font-medium py-2 px-3 rounded-md transition-colors duration-200">
+                    <span class="material-symbols-outlined mr-2">description</span> Word
+                </button>
+                <button id="pdf-btn" class="flex items-center text-sm bg-gray-800/60 hover:bg-purple-800/60 border border-gray-600 hover:border-purple-600 text-white font-medium py-2 px-3 rounded-md transition-colors duration-200">
+                    <span class="material-symbols-outlined mr-2">picture_as_pdf</span> PDF
+                </button>
+            </div>
         </div>
     `;
-
-    // 2. Map AI data to the pre-defined tab content containers
+    
+    // 3. Build content for each text-based tab
     for (const tabKey in lessonPlan) {
-        const contentContainer = document.getElementById(`${tabKey}-content`);
-        if (contentContainer) {
-            const tabData = lessonPlan[tabKey];
-            let contentHtml = '';
-            for (const contentKey in tabData) {
-                // Create a readable title from the camelCase key
-                const title = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                let body = tabData[contentKey];
+        if (tabKey === 'imagePrompt') continue; // Skip the image prompt data
 
-                // Format lists nicely for classic resources
+        const tabContentContainer = document.getElementById(`${tabKey}-content`);
+        if (tabContentContainer) {
+            const tabData = lessonPlan[tabKey];
+            let tagsHtml = '<div class="flex items-center flex-wrap gap-2 mb-6 tag-group">';
+            let contentHtml = '';
+            let isFirstTag = true;
+
+            for (const contentKey in tabData) {
+                const title = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                tagsHtml += `<button class="tag text-sm font-medium px-3 py-1 rounded-full cursor-pointer transition-colors duration-200 bg-purple-800/50 text-purple-200 hover:bg-purple-700 ${isFirstTag ? 'active-tag' : ''}" data-content-id="${tabKey}-${contentKey}">${title}</button>`;
+                
+                let body = tabData[contentKey];
                 if (Array.isArray(body)) {
                     body = `<ul class="list-disc list-inside space-y-2">${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
                 }
-                
-                // **THE FIX**: This creates the structured sub-heading for each item.
+
                 contentHtml += `
-                    <div class="mb-8">
-                        <h3 class="text-xl font-bold text-purple-300 mb-3">${title}</h3>
+                    <div id="${tabKey}-${contentKey}" class="tag-content ${isFirstTag ? 'active-tag-content' : ''}">
                         <div class="prose prose-invert max-w-none text-gray-300">${body.replace(/\n/g, '<br>')}</div>
-                    </div>`;
+                        <div class="mt-6 pt-4 border-t border-gray-700 text-right">
+                            <button class="share-btn flex items-center text-sm bg-transparent hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500 font-medium py-2 px-3 rounded-md transition-colors duration-200" data-category="${title}">
+                                <span class="material-symbols-outlined mr-2">groups</span> Share to Hub
+                            </button>
+                        </div>
+                    </div>
+                `;
+                isFirstTag = false;
             }
-            contentContainer.innerHTML = contentHtml;
+            tagsHtml += '</div>';
+            tabContentContainer.innerHTML = headerHtml + tagsHtml + contentHtml;
         }
     }
     
-    // 3. Show the main content area and hide the loader
+    // 4. Add event listeners to the newly created buttons
+    setupActionButtons();
+
+    // 5. Show content and hide loader
     mainContent.style.display = 'block';
-    document.getElementById('loader').style.display = 'none';
+    loader.style.display = 'none';
 }
 
-
+// --- Event Listener Setup ---
 function setupTabInteractions() {
     const tabs = document.querySelectorAll('#tabs-navigation a');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -125,19 +160,145 @@ function setupTabInteractions() {
     tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            // Deactivate all tabs and content
             tabs.forEach(item => item.classList.remove('active-tab'));
             tabContents.forEach(content => content.classList.remove('active-tab-content'));
             
-            // Activate the clicked tab and its corresponding content
             tab.classList.add('active-tab');
             const tabId = tab.dataset.tab;
-            const contentToShow = document.getElementById(`${tabId}-content`);
-            if (contentToShow) {
-                contentToShow.classList.add('active-tab-content');
-            }
+            document.getElementById(`${tabId}-content`).classList.add('active-tab-content');
         });
     });
+}
+
+function setupActionButtons() {
+    // Word and PDF buttons
+    document.getElementById('word-btn')?.addEventListener('click', handleWordDownload);
+    document.getElementById('pdf-btn')?.addEventListener('click', handlePdfDownload);
+
+    // Tag switching within a tab
+    document.querySelectorAll('.tag-group .tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+            const parentGroup = tag.closest('.tag-group');
+            parentGroup.querySelectorAll('.tag').forEach(t => t.classList.remove('active-tag'));
+            tag.classList.add('active-tag');
+            
+            const contentId = tag.dataset.contentId;
+            const parentTabContent = tag.closest('.tab-content');
+            parentTabContent.querySelectorAll('.tag-content').forEach(c => c.classList.remove('active-tag-content'));
+            document.getElementById(contentId).classList.add('active-tag-content');
+        });
+    });
+
+    // Share to Hub buttons
+    document.querySelectorAll('.share-btn').forEach(button => {
+        button.addEventListener('click', handleShareToHub);
+    });
+}
+
+
+// --- Action Button Handlers ---
+async function handleWordDownload() {
+    if (!currentLessonData) return alert('Lesson data not available.');
+    let htmlContent = `<h1>Topic: ${currentTopic}</h1>`;
+
+    for (const tabKey in currentLessonData) {
+        if (tabKey === 'imagePrompt') continue;
+        const tabTitle = tabKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        htmlContent += `<h2>${tabTitle}</h2>`;
+        for (const contentKey in currentLessonData[tabKey]) {
+            const contentTitle = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            htmlContent += `<h3>${contentTitle}</h3>`;
+            let body = currentLessonData[tabKey][contentKey];
+            if (Array.isArray(body)) {
+                body = `<ul>${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
+            }
+            htmlContent += `<div>${body.replace(/\n/g, '<br>')}</div><br>`;
+        }
+    }
+    
+    const blob = await htmlToDocx(htmlContent);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentTopic}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function handlePdfDownload() {
+    if (!currentLessonData) return alert('Lesson data not available.');
+    
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+    let y = 15;
+    const margin = 10;
+    const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
+
+    const addText = (text, size, weight) => {
+        if (y > 280) { // New page if content overflows
+            doc.addPage();
+            y = 15;
+        }
+        doc.setFontSize(size).setFont(undefined, weight);
+        const splitText = doc.splitTextToSize(text, maxWidth);
+        doc.text(splitText, margin, y);
+        y += (doc.getTextDimensions(splitText).h) + 4;
+    };
+
+    addText(`Topic: ${currentTopic}`, 18, 'bold');
+    y += 5;
+
+    for (const tabKey in currentLessonData) {
+        if (tabKey === 'imagePrompt') continue;
+        const tabTitle = tabKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        addText(tabTitle, 16, 'bold');
+        for (const contentKey in currentLessonData[tabKey]) {
+            const contentTitle = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addText(contentTitle, 14, 'bold');
+            
+            let body = currentLessonData[tabKey][contentKey];
+            if (Array.isArray(body)) {
+                body.forEach(item => addText(`• ${item}`, 12, 'normal'));
+            } else {
+                addText(body, 12, 'normal');
+            }
+            y += 2;
+        }
+        y += 5;
+    }
+    doc.save(`${currentTopic}.pdf`);
+}
+
+async function handleShareToHub(event) {
+    const button = event.currentTarget;
+    const originalContent = button.innerHTML;
+    const contentToShare = button.closest('.tag-content').querySelector('.prose').innerHTML;
+    const category = button.dataset.category;
+
+    if (!currentUserSession) return alert('You must be logged in to share.');
+
+    button.disabled = true;
+    button.innerHTML = `<div class="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mx-auto"></div>`;
+
+    const { error } = await supabase.from('CommunityHub').insert([{
+        user_id: currentUserSession.user.id,
+        user_name: currentUserSession.user.user_metadata?.full_name || currentUserSession.user.email,
+        topic: currentTopic,
+        category: category,
+        content: contentToShare,
+    }]);
+
+    if (error) {
+        alert('Error sharing to hub: ' + error.message);
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    } else {
+        button.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Shared!`;
+        setTimeout(() => {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }, 2500);
+    }
 }
 
