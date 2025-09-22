@@ -1,48 +1,42 @@
 // Path: /api/generate.js
 
-// This is a Vercel Node.js Function. We've removed the 'edge' runtime for better compatibility.
-// It integrates with ClipDrop and Google's AI.
+// This is a Vercel Node.js Function. It uses axios for robust ClipDrop API calls.
+import axios from 'axios';
+import FormData from 'form-data';
 
 // --- Helper function to generate an image with ClipDrop ---
 async function generateImageWithClipDrop(prompt, apiKey) {
-    // ClipDrop requires a FormData object for the request
     const formData = new FormData();
-    // We enhance the prompt to guide the AI toward a coloring page style
     formData.append('prompt', `A simple, bold outlines, cartoon-style coloring page for a 4-year-old child about: ${prompt}`);
 
     try {
-        const response = await fetch('https://api.clipdrop.co/text-to-image/v1', {
-            method: 'POST',
-            headers: { 'x-api-key': apiKey },
-            body: formData,
+        const response = await axios.post('https://api.clipdrop.co/text-to-image/v1', formData, {
+            headers: {
+                ...formData.getHeaders(),
+                'x-api-key': apiKey,
+            },
+            responseType: 'arraybuffer',
         });
         
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.error('ClipDrop API Error:', errorBody);
-            return null; // Return null on failure
-        }
-        
-        // Convert the image response to a base64 data URL
-        const imageBuffer = await response.arrayBuffer();
-        // Use Buffer, which is available in the Node.js runtime
-        const base64Image = Buffer.from(imageBuffer).toString('base64');
+        const base64Image = Buffer.from(response.data).toString('base64');
         return `data:image/png;base64,${base64Image}`;
 
     } catch (error) {
-        console.error('Error calling ClipDrop API:', error);
+        console.error('ClipDrop API Error:', error.response ? error.response.data.toString() : error.message);
         return null;
     }
 }
 
 // --- Main function that handles requests to this endpoint ---
 export default async function handler(request, response) {
-    // In the Node.js runtime, we get the body from request.body
+    if (request.method !== 'POST') {
+        return response.status(405).json({ error: 'Method Not Allowed' });
+    }
+
     const { topic } = request.body;
     const geminiApiKey = process.env.GEMINI_API_KEY;
     const clipdropApiKey = process.env.CLIPDROP_API_KEY;
 
-    // Security and validation checks
     if (!topic) {
         return response.status(400).json({ error: 'Topic is required.' });
     }
@@ -50,7 +44,6 @@ export default async function handler(request, response) {
         return response.status(500).json({ error: 'API keys are not configured on the server.' });
     }
     
-    // This prompt instructs the AI on its persona and the exact JSON structure required.
     const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers specializing in the Montessori method for children aged 3-6.
   
   Your response MUST be ONLY a valid, complete JSON object. Do NOT use markdown or any text outside the JSON structure.
@@ -103,7 +96,6 @@ export default async function handler(request, response) {
             },
         };
         
-        // --- 1. Generate the lesson plan text ---
         const textApiResponse = await fetch(textApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -132,13 +124,11 @@ export default async function handler(request, response) {
             throw new Error("AI returned invalid JSON format. Please try again.");
         }
 
-        // --- 2. Generate the image using ClipDrop ---
         let imageUrl = null;
         if (lessonPlan.imagePrompt) {
             imageUrl = await generateImageWithClipDrop(lessonPlan.imagePrompt, clipdropApiKey);
         }
         
-        // --- 3. Send both back to the client ---
         return response.status(200).json({ lessonPlan, imageUrl });
 
     } catch (error) {

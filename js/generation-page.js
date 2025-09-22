@@ -97,9 +97,6 @@ function populatePage(lessonPlan, imageUrl, topic) {
                 <p class="mt-1 text-gray-400">This plan includes new and classic resources to explore ${topic}.</p>
             </div>
             <div class="flex items-center space-x-2 mt-4 sm:mt-0">
-                <button id="word-btn" class="flex items-center text-sm bg-gray-800/60 hover:bg-purple-800/60 border border-gray-600 hover:border-purple-600 text-white font-medium py-2 px-3 rounded-md transition-colors duration-200">
-                    <span class="material-symbols-outlined mr-2">description</span> Word
-                </button>
                 <button id="pdf-btn" class="flex items-center text-sm bg-gray-800/60 hover:bg-purple-800/60 border border-gray-600 hover:border-purple-600 text-white font-medium py-2 px-3 rounded-md transition-colors duration-200">
                     <span class="material-symbols-outlined mr-2">picture_as_pdf</span> PDF
                 </button>
@@ -123,7 +120,7 @@ function populatePage(lessonPlan, imageUrl, topic) {
                 tagsHtml += `<button class="tag text-sm font-medium px-3 py-1 rounded-full cursor-pointer transition-colors duration-200 bg-purple-800/50 text-purple-200 hover:bg-purple-700 ${isFirstTag ? 'active-tag' : ''}" data-content-id="${tabKey}-${contentKey}">${title}</button>`;
                 
                 let body = tabData[contentKey];
-                // **THE FIX for clickable links**: Check if this is a resource tab
+                // Create clickable links for classic resources
                 if (tabKey === 'classicResources' && Array.isArray(body)) {
                     body = `<ul class="list-disc list-inside space-y-2">${body.map(item => {
                         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(item)}`;
@@ -178,8 +175,7 @@ function setupTabInteractions() {
 }
 
 function setupActionButtons() {
-    // Word and PDF buttons
-    document.getElementById('word-btn')?.addEventListener('click', handleWordDownload);
+    // PDF download button
     document.getElementById('pdf-btn')?.addEventListener('click', handlePdfDownload);
 
     // Tag switching within a tab
@@ -202,44 +198,7 @@ function setupActionButtons() {
     });
 }
 
-
 // --- Action Button Handlers ---
-async function handleWordDownload() {
-    if (!currentLessonData) return alert('Lesson data not available.');
-    let htmlContent = `<h1>Topic: ${currentTopic}</h1>`;
-
-    for (const tabKey in currentLessonData) {
-        if (tabKey === 'imagePrompt') continue;
-        const tabTitle = tabKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-        htmlContent += `<h2>${tabTitle}</h2>`;
-        for (const contentKey in currentLessonData[tabKey]) {
-            const contentTitle = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            htmlContent += `<h3>${contentTitle}</h3>`;
-            let body = currentLessonData[tabKey][contentKey];
-            if (Array.isArray(body)) {
-                body = `<ul>${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
-            }
-            htmlContent += `<div>${body.replace(/\n/g, '<br>')}</div><br>`;
-        }
-    }
-    
-    // **THE FIX for Word download**
-    const fileBuffer = await htmlToDocx(htmlContent, null, {
-        footer: true,
-        pageNumber: true,
-    });
-    
-    const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${currentTopic}.docx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
 function handlePdfDownload() {
     if (!currentLessonData) return alert('Lesson data not available.');
     
