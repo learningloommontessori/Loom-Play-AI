@@ -5,6 +5,7 @@ let supabase;
 let currentUserSession;
 let currentLessonData = null; // Global holder for the raw lesson data
 let currentTopic = '';
+let currentLanguage = 'English'; // Default language
 
 // --- Main Page Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -27,6 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     
     currentTopic = localStorage.getItem('currentTopic');
+    // ** THE FIX **: Get the selected language from localStorage
+    currentLanguage = localStorage.getItem('generationLanguage') || 'English';
+
     if (!currentTopic) {
         alert('No topic found. Redirecting to start a new lesson.');
         window.location.href = '/new-chat.html';
@@ -34,11 +38,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     setupTabInteractions();
-    generateAndDisplayContent(currentTopic, session.access_token);
+    // Pass the language to the generation function
+    generateAndDisplayContent(currentTopic, currentLanguage, session.access_token);
 });
 
 // --- API Call and Content Display ---
-async function generateAndDisplayContent(topic, token) {
+async function generateAndDisplayContent(topic, language, token) {
     const loader = document.getElementById('loader');
     const mainContent = document.getElementById('main-content');
     
@@ -49,7 +54,8 @@ async function generateAndDisplayContent(topic, token) {
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ topic }),
+            // ** THE FIX **: Send both topic and language to the API
+            body: JSON.stringify({ topic, language }),
         });
 
         if (!response.ok) {

@@ -38,14 +38,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const topicInput = document.getElementById('topic');
             const topic = topicInput.value.trim();
+            
+            // Get the selected language from the radio buttons
+            const selectedLanguage = document.querySelector('input[name="language"]:checked').value;
 
             if (!topic) {
                 showErrorMessage("Please enter a topic to continue.");
                 return;
             }
 
-            // Save the topic to localStorage
+            // Save both topic and language to localStorage
             localStorage.setItem('currentTopic', topic);
+            localStorage.setItem('generationLanguage', selectedLanguage);
             
             // Redirect to the generation page
             window.location.href = '/generation-page.html';
