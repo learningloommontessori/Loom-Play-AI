@@ -1,4 +1,4 @@
-import { getSupabase } from './supabaseClient.js';
+import getSupabase from './supabaseClient.js';
 
 // --- Global variables ---
 let supabase;
