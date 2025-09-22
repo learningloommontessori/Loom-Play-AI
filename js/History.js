@@ -1,8 +1,10 @@
 // js/history.js
 
-import supabase from './supabaseClient.js';
+import getSupabase from './supabaseClient.js';
+let supabase;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    supabase = await getSupabase();
     // 1. Authentication & User Info Setup
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
@@ -13,20 +15,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userName = user.user_metadata?.full_name || user.email;
 
     // Personalize welcome message and setup logout button
-    document.getElementById('welcome-message').textContent = `Welcome, ${userName}!`;
-    document.getElementById('logoutButton').addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        window.location.href = '/';
-    });
+    const welcomeMessage = document.getElementById('welcome-message');
+    if(welcomeMessage) {
+        welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;
+        welcomeMessage.classList.remove('hidden');
+    }
+    
+    const logoutButton = document.getElementById('logoutButton');
+    if(logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        });
+    }
     
     // 2. Fetch and display lessons for the current user
     fetchAndDisplayLessons(user.id);
 
     // 3. Setup search functionality
     const searchInput = document.getElementById('search-input');
-    searchInput.addEventListener('input', (e) => {
-        filterLessons(e.target.value);
-    });
+    if(searchInput){
+        searchInput.addEventListener('input', (e) => {
+            filterLessons(e.target.value);
+        });
+    }
 });
 
 /**
@@ -75,11 +87,17 @@ function createLessonCard(lesson) {
     const formattedDate = new Date(lesson.created_at).toLocaleString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
+    
+    // ** THE FIX **: Add language display
+    const language = lesson.language || 'English'; // Default to English if not specified
 
     return `
         <div class="lesson-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden group flex flex-col justify-between hover:border-purple-500 border border-transparent transition-all duration-300" data-lesson-id="${lesson.id}" data-topic="${lesson.topic}">
             <div class="p-6 flex-grow">
-                <h3 class="text-xl font-semibold text-white mb-2">${lesson.topic}</h3>
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-xl font-semibold text-white">${lesson.topic}</h3>
+                    <span class="text-xs font-medium bg-purple-800/60 text-purple-200 px-2 py-1 rounded-full">${language}</span>
+                </div>
                 <p class="text-gray-400 text-sm mb-4 line-clamp-2">A foundational Montessori activity focusing on fine motor skills, concentration, and coordination.</p>
             </div>
             <div class="px-6 pb-4 pt-2">
@@ -111,10 +129,15 @@ function attachCardListeners() {
         card.querySelector('.view-btn').addEventListener('click', async (e) => {
             e.stopPropagation();
             const { data, error } = await supabase.from('lessons').select('lesson_data, topic').eq('id', lessonId).single();
-            if (error) return alert('Error fetching lesson data.');
+            if (error) {
+                console.error("Error fetching lesson data:", error);
+                alert('Error fetching lesson data.');
+                return;
+            }
+            // ** THE FIX **: Pass lesson data directly instead of refetching
             localStorage.setItem('currentLesson', JSON.stringify(data.lesson_data));
             localStorage.setItem('currentTopic', data.topic);
-            window.location.href = '/generation-page.html';
+            window.location.href = '/generation-page.html?fromHistory=true';
         });
 
         card.querySelector('.share-btn').addEventListener('click', async (e) => {
@@ -127,9 +150,11 @@ function attachCardListeners() {
         card.querySelector('.delete-btn').addEventListener('click', async (e) => {
             e.stopPropagation();
             const topic = card.dataset.topic;
-            if (confirm(`Are you sure you want to delete the lesson "${topic}"? This cannot be undone.`)) {
+            // ** THE FIX **: Replace confirm with a custom modal if available, or keep it simple
+            if (window.confirm(`Are you sure you want to delete the lesson "${topic}"? This cannot be undone.`)) {
                 const { error } = await supabase.from('lessons').delete().eq('id', lessonId);
                 if (error) {
+                    console.error("Error deleting lesson:", error);
                     alert('Error deleting lesson: ' + error.message);
                 } else {
                     card.remove(); // Remove card from the view
@@ -151,13 +176,30 @@ function attachCardListeners() {
 function filterLessons(searchTerm) {
     const term = searchTerm.toLowerCase();
     const cards = document.querySelectorAll('.lesson-card');
+    let visibleCount = 0;
     cards.forEach(card => {
         const title = card.querySelector('h3').textContent.toLowerCase();
         if (title.includes(term)) {
             card.style.display = 'flex';
+            visibleCount++;
         } else {
             card.style.display = 'none';
         }
     });
+
+    // Optional: Show a "no results" message if search yields nothing
+    const emptyState = document.getElementById('empty-state');
+    const grid = document.getElementById('history-grid');
+    if(visibleCount === 0 && cards.length > 0) {
+        // You could add a specific "no search results" element if you want
+        grid.style.display = 'none';
+        emptyState.style.display = 'flex';
+        emptyState.querySelector('h3').textContent = 'No Lessons Found';
+        emptyState.querySelector('p').textContent = 'Try adjusting your search term.';
+        emptyState.querySelector('a').style.display = 'none';
+    } else if (visibleCount > 0) {
+        grid.style.display = 'grid';
+        emptyState.style.display = 'none';
+    }
 }
 
