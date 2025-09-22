@@ -13,7 +13,7 @@ export default async function handler(request) {
   }
 
   try {
-    // --- 1. GET DATA, LANGUAGE, AND AUTHENTICATE ---
+    // --- 1. GET DATA, AND AUTHENTICATE USER ---
     const { topic, language } = await request.json(); 
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.split(' ')[1];
@@ -22,8 +22,9 @@ export default async function handler(request) {
         return new Response(JSON.stringify({ error: 'Authentication token is required.' }), { status: 401 });
     }
     
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    // Use the ANON key ONLY to verify the user's token
+    const supabaseUserClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
 
     if (userError || !user) {
         return new Response(JSON.stringify({ error: 'Invalid or expired user session.' }), { status: 401 });
@@ -34,7 +35,7 @@ export default async function handler(request) {
     if (!topic || !geminiApiKey) {
         return new Response(JSON.stringify({ error: 'Topic and API Key are required.' }), { status: 400 });
     }
-
+    
     const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers specializing in the Montessori method for children aged 3-6.
   
     Your response MUST be ONLY a valid, complete JSON object, translated entirely into the requested language: ${language}. Do NOT use markdown. All strings must be properly escaped.
@@ -69,18 +70,21 @@ export default async function handler(request) {
     const lessonPlan = JSON.parse(generatedText.replace(/```json/g, '').replace(/```/g, '').trim());
 
     // --- 3. SAVE TO DATABASE ---
-    // ** THE FIX **: Use the correct table and column names
-    const { error: dbError } = await supabase
-      .from('AIGeneratedContent') // Correct table name
+    // ** THE FIX **: Use the Service Role Key to bypass RLS for insertion
+    const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    
+    const { error: dbError } = await supabaseAdmin
+      .from('AIGeneratedContent')
       .insert([{
           user_id: user.id,
           topic: topic,
-          content_json: lessonPlan, // Correct column name
+          content_json: lessonPlan,
           language: language 
       }]);
 
     if (dbError) {
         console.error('Supabase DB Insert Error:', dbError);
+        // Provide a more specific error message back to the client
         throw new Error(`Supabase error: ${dbError.message}`);
     }
     
