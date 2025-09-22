@@ -123,9 +123,16 @@ function populatePage(lessonPlan, imageUrl, topic) {
                 tagsHtml += `<button class="tag text-sm font-medium px-3 py-1 rounded-full cursor-pointer transition-colors duration-200 bg-purple-800/50 text-purple-200 hover:bg-purple-700 ${isFirstTag ? 'active-tag' : ''}" data-content-id="${tabKey}-${contentKey}">${title}</button>`;
                 
                 let body = tabData[contentKey];
-                if (Array.isArray(body)) {
+                // **THE FIX for clickable links**: Check if this is a resource tab
+                if (tabKey === 'classicResources' && Array.isArray(body)) {
+                    body = `<ul class="list-disc list-inside space-y-2">${body.map(item => {
+                        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(item)}`;
+                        return `<li><a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:underline">${item}</a></li>`;
+                    }).join('')}</ul>`;
+                } else if (Array.isArray(body)) {
                     body = `<ul class="list-disc list-inside space-y-2">${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
                 }
+
 
                 contentHtml += `
                     <div id="${tabKey}-${contentKey}" class="tag-content ${isFirstTag ? 'active-tag-content' : ''}">
@@ -216,7 +223,13 @@ async function handleWordDownload() {
         }
     }
     
-    const blob = await htmlToDocx(htmlContent);
+    // **THE FIX for Word download**
+    const fileBuffer = await htmlToDocx(htmlContent, null, {
+        footer: true,
+        pageNumber: true,
+    });
+    
+    const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -224,6 +237,7 @@ async function handleWordDownload() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function handlePdfDownload() {
