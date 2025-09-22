@@ -77,8 +77,11 @@ function populatePage(lessonPlan, imageUrl, topic) {
     // 1. Populate the header with the title and image
     contentHeader.innerHTML = `
         <div class="flex flex-col sm:flex-row items-start justify-between mb-6 pb-4 border-b border-gray-700">
-            <h2 class="text-3xl font-bold mb-4 sm:mb-0" id="lesson-title">Lesson: ${topic}</h2>
-            ${imageUrl ? `<img src="${imageUrl}" alt="Generated coloring page for ${topic}" class="w-full sm:w-48 h-auto rounded-lg border-2 border-purple-500 shadow-lg">` : ''}
+            <div>
+                <h2 class="text-3xl font-bold" id="lesson-title">Topic: ${topic}</h2>
+                <p class="mt-2 text-gray-400">This plan includes new and classic resources, along with creative Montessori-inspired activities to explore ${topic}.</p>
+            </div>
+            ${imageUrl ? `<img src="${imageUrl}" alt="Generated coloring page for ${topic}" class="w-full mt-4 sm:mt-0 sm:w-48 h-auto rounded-lg border-2 border-purple-500 shadow-lg">` : ''}
         </div>
     `;
 
@@ -93,15 +96,16 @@ function populatePage(lessonPlan, imageUrl, topic) {
                 const title = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                 let body = tabData[contentKey];
 
-                // Format lists nicely
+                // Format lists nicely for classic resources
                 if (Array.isArray(body)) {
                     body = `<ul class="list-disc list-inside space-y-2">${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
                 }
                 
+                // **THE FIX**: This creates the structured sub-heading for each item.
                 contentHtml += `
                     <div class="mb-8">
                         <h3 class="text-xl font-bold text-purple-300 mb-3">${title}</h3>
-                        <div class="prose prose-invert max-w-none text-gray-300">${body}</div>
+                        <div class="prose prose-invert max-w-none text-gray-300">${body.replace(/\n/g, '<br>')}</div>
                     </div>`;
             }
             contentContainer.innerHTML = contentHtml;
