@@ -6,11 +6,25 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <style type="text/tailwindcss">
         body {
             font-family: 'Roboto', sans-serif;
         }
-    </style>
+        /* Style for the content inside the modal */
+        .modal-content h4 {
+            @apply text-xl font-semibold text-purple-300 mt-6 mb-2 border-b border-gray-600 pb-2;
+        }
+        .modal-content h5 {
+            @apply text-lg font-bold text-gray-200 mt-4 mb-1;
+        }
+        .modal-content p, .modal-content ul {
+            @apply text-gray-300 leading-relaxed;
+        }
+        .modal-content ul {
+            @apply list-disc list-inside pl-4;
+        }
+</style>
 </head>
 <body class="bg-gray-900 text-white">
 <div class="relative min-h-screen flex flex-col">
@@ -25,11 +39,11 @@
 <button @click="open = !open" class="text-white focus:outline-none" aria-label="Main Menu">
 <span class="material-symbols-outlined text-4xl hover:text-purple-300 transition-colors">menu</span>
 </button>
-<div @click.away="open = false" class="absolute left-0 mt-2 w-64 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-10" style="display: none;" x-show="open">
+<div @click.away="open = false" class="absolute left-0 mt-2 w-64 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-20" style="display: none;" x-show="open">
 <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/dashboard.html">
 <span class="material-symbols-outlined mr-3">dashboard</span> Dashboard
                             </a>
-<a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/history.html">
+<a class="flex items-center px-4 py-3 text-sm font-bold text-white bg-purple-600" href="/history.html">
 <span class="material-symbols-outlined mr-3">history</span> Threads of the Past
                             </a>
 <a class="flex items-center px-4 py-3 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/collective-loom.html">
@@ -48,7 +62,7 @@
 <span id="welcome-message" class="hidden sm:inline mr-2 text-gray-300">Welcome, User!</span>
 <span class="material-symbols-outlined text-4xl text-white hover:text-purple-300 transition-colors">account_circle</span>
 </button>
-<div @click.away="open = false" class="absolute right-0 mt-2 w-56 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-10" style="display: none;" x-show="open">
+<div @click.away="open = false" class="absolute right-0 mt-2 w-56 bg-gray-800/90 backdrop-blur-sm rounded-md shadow-lg py-1 z-20" style="display: none;" x-show="open">
 <a class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-purple-600 hover:text-white" href="/profile.html">
 <span class="material-symbols-outlined mr-3">account_circle</span> The Weaver
                         </a>
@@ -108,7 +122,25 @@
 <p class="text-sm text-gray-400">Made By: Monika Pathak</p>
 </footer>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<!-- ** THE FIX **: Modal for viewing lesson content -->
+<div id="lesson-modal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div id="modal-container" class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <header class="flex items-center justify-between p-4 border-b border-gray-700">
+            <h3 id="modal-title" class="text-2xl font-bold text-white">Lesson Details</h3>
+            <button id="modal-close-btn" class="text-gray-400 hover:text-white">
+                <span class="material-symbols-outlined text-3xl">close</span>
+            </button>
+        </header>
+        <main id="modal-content" class="p-6 overflow-y-auto modal-content">
+            <!-- Content will be injected here -->
+            <div id="modal-loader" class="flex justify-center items-center h-48">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+            </div>
+        </main>
+    </div>
+</div>
+
 <script type="module" src="js/history.js"></script>
 </body>
 </html>
