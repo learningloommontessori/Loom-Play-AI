@@ -77,7 +77,11 @@ async function generateAndDisplayContent(topic, userId, userName) {
 
 // Fills the HTML containers with the AI-generated content
 function populatePage(data) {
-    document.getElementById('lesson-title').textContent = `Topic: ${currentLessonData.topic}`;
+    // ** THE FIX **: Check if the element exists before trying to set its content.
+    const lessonTitleElement = document.getElementById('lesson-title');
+    if (lessonTitleElement) {
+        lessonTitleElement.textContent = `Topic: ${currentLessonData.topic}`;
+    }
 
     const tabMapping = {
         newlyCreatedContent: "newlyCreatedContent-content",
@@ -118,6 +122,8 @@ function populatePage(data) {
                 contentHtml += `</div>`;
             });
             contentContainer.innerHTML = contentHtml;
+        } else {
+             console.warn(`Content container with ID '${contentId}' not found in the HTML.`);
         }
     });
 }
@@ -173,14 +179,14 @@ function handlePdfDownload() {
     
     // Loop through the lesson data and add it to the PDF
     Object.values(currentLessonData).forEach(tabContent => {
-        if (typeof tabContent === 'object') {
+        if (typeof tabContent === 'object' && tabContent !== null) {
             Object.entries(tabContent).forEach(([key, value]) => {
                 const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                 addText(title, 16, true);
                 if (Array.isArray(value)) {
                     value.forEach(item => addText(`- ${item}`, 12));
                 } else {
-                    addText(value, 12);
+                    addText(String(value), 12);
                 }
                  y += 5; // Add extra space between sections
             });
