@@ -1,16 +1,17 @@
 {
-    "name": "loom-play-ai",
-    "version": "1.0.0",
-    "description": "AI lesson planner for Montessori teachers.",
-    "main": "api/generate.js",
-    "scripts": {
-        "start": "vercel dev"
-    },
-    "dependencies": {
-        "axios": "^1.7.2",
-        "form-data": "^4.0.0"
-    },
-    "author": "Monika Pathak",
-    "license": "ISC"
+  "name": "loom-play-ai",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "description": "AI lesson planner for Montessori teachers.",
+  "main": "api/generate.js",
+  "scripts": {
+    "start": "vercel dev"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "form-data": "^4.0.0"
+  },
+  "author": "Monika Pathak",
+  "license": "ISC"
 }
 
