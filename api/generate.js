@@ -14,7 +14,7 @@ export default async function handler(request) {
 
   try {
     // --- 1. GET DATA, LANGUAGE, AND AUTHENTICATE ---
-    const { topic, language } = await request.json(); // Get language from request
+    const { topic, language } = await request.json(); 
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.split(' ')[1];
 
@@ -35,7 +35,6 @@ export default async function handler(request) {
         return new Response(JSON.stringify({ error: 'Topic and API Key are required.' }), { status: 400 });
     }
 
-    // Modify the prompt to include the selected language.
     const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers specializing in the Montessori method for children aged 3-6.
   
     Your response MUST be ONLY a valid, complete JSON object, translated entirely into the requested language: ${language}. Do NOT use markdown. All strings must be properly escaped.
@@ -69,18 +68,20 @@ export default async function handler(request) {
     
     const lessonPlan = JSON.parse(generatedText.replace(/```json/g, '').replace(/```/g, '').trim());
 
-    // --- 3. SAVE TO DATABASE (now includes language) ---
+    // --- 3. SAVE TO DATABASE ---
+    // ** THE FIX **: Use the correct table and column names
     const { error: dbError } = await supabase
-      .from('AIGeneratedContent')
+      .from('AIGeneratedContent') // Correct table name
       .insert([{
           user_id: user.id,
           topic: topic,
-          lesson_data: lessonPlan,
-          language: language // Save the language
+          content_json: lessonPlan, // Correct column name
+          language: language 
       }]);
 
     if (dbError) {
         console.error('Supabase DB Insert Error:', dbError);
+        throw new Error(`Supabase error: ${dbError.message}`);
     }
     
     return new Response(JSON.stringify({ lessonPlan }), {
