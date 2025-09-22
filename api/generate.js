@@ -71,7 +71,7 @@ export default async function handler(request) {
 
     // --- 3. SAVE TO DATABASE (now includes language) ---
     const { error: dbError } = await supabase
-      .from('GeneratedContent')
+      .from('AIGeneratedContent')
       .insert([{
           user_id: user.id,
           topic: topic,
