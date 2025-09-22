@@ -1,273 +1,222 @@
 // js/generation-page.js
 import getSupabase from './supabaseClient.js';
 
-let supabase;
-let currentUserSession;
-let currentLessonData = null; // Global holder for the raw lesson data
-let currentTopic = '';
+let currentLessonData = null; // Holds the full lesson plan for export functions
 
 // --- Main Page Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
-    supabase = await getSupabase();
-    
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) {
+    const supabase = await getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
         window.location.href = '/sign-in.html';
         return;
     }
-    currentUserSession = session;
 
-    const user = session.user;
-    const userName = user.user_metadata?.full_name || user.email;
-    document.getElementById('welcome-message').textContent = `Welcome, ${userName.split(' ')[0]}!`;
-    document.getElementById('welcome-message').classList.remove('hidden');
-    document.getElementById('logoutButton').addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        window.location.href = '/index.html';
-    });
-    
-    currentTopic = localStorage.getItem('currentTopic');
-    if (!currentTopic) {
+    // Personalize header and set up logout
+    const userName = session.user.user_metadata?.full_name || session.user.email;
+    const welcomeMessage = document.getElementById('welcome-message');
+    if (welcomeMessage) {
+        welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;
+        welcomeMessage.classList.remove('hidden');
+    }
+    const logoutButton = document.getElementById('logoutButton');
+    if(logoutButton) {
+        logoutButton.addEventListener('click', () => supabase.auth.signOut().then(() => window.location.href = '/index.html'));
+    }
+
+    // Retrieve topic from the previous page
+    const topic = localStorage.getItem('currentTopic');
+    if (!topic) {
         alert('No topic found. Redirecting to start a new lesson.');
         window.location.href = '/new-chat.html';
         return;
     }
-    
-    setupTabInteractions();
-    generateAndDisplayContent(currentTopic, session.access_token);
+
+    // Start the generation process
+    generateAndDisplayContent(topic, session.user.id, userName);
 });
 
-// --- API Call and Content Display ---
-async function generateAndDisplayContent(topic, token) {
+// --- Content Generation and Display ---
+async function generateAndDisplayContent(topic, userId, userName) {
     const loader = document.getElementById('loader');
     const mainContent = document.getElementById('main-content');
     
-    loader.style.display = 'flex';
-    mainContent.style.display = 'none';
+    loader.classList.remove('hidden');
+    mainContent.classList.add('hidden');
 
     try {
         const response = await fetch('/api/generate', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ topic }),
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to generate content.');
+            throw new Error(errorData.error || 'Failed to generate content from API.');
         }
 
-        const { lessonPlan, imageUrl } = await response.json();
-        currentLessonData = lessonPlan; // Store for export functions
+        const { lessonPlan } = await response.json();
+        currentLessonData = lessonPlan; // Store for export
+        currentLessonData.topic = topic; // Ensure topic is part of the data for exports
         
-        populatePage(lessonPlan, imageUrl, topic);
+        populatePage(lessonPlan);
+        setupPageInteractions(userId, userName);
 
-    } catch (err) {
-        console.error('Error fetching generated content:', err);
-        loader.innerHTML = `<div class="text-center"><p class="text-red-400 text-lg">Sorry, something went wrong.</p><p class="text-gray-400 text-sm mt-2">${err.message}</p><a href="/new-chat.html" class="mt-4 inline-block bg-purple-600 text-white px-4 py-2 rounded-lg">Try Again</a></div>`;
+    } catch (error) {
+        console.error('Generation Error:', error);
+        alert(`An error occurred during content generation: ${error.message}`);
+        // Redirect back to the new chat page on failure
+        window.location.href = '/new-chat.html';
+    } finally {
+        loader.classList.add('hidden');
+        mainContent.classList.remove('hidden');
     }
 }
 
-// --- DOM Population ---
-function populatePage(lessonPlan, imageUrl, topic) {
-    const mainContent = document.getElementById('main-content');
+// Fills the HTML containers with the AI-generated content
+function populatePage(data) {
+    document.getElementById('lesson-title').textContent = `Topic: ${currentLessonData.topic}`;
 
-    // 1. Populate the Generated Image Tab
-    const imageContainer = document.getElementById('generatedImage-content');
-    if (imageUrl) {
-        imageContainer.innerHTML = `
-            <div class="flex flex-col items-center">
-                 <h2 class="text-2xl font-bold mb-4">Generated Coloring Page</h2>
-                 <img src="${imageUrl}" alt="Generated coloring page for ${topic}" class="w-full max-w-md h-auto rounded-lg border-2 border-purple-500 shadow-lg">
-                 <a href="${imageUrl}" download="${topic}-coloring-page.png" class="mt-4 inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
-                    <span class="material-symbols-outlined mr-2">download</span>
-                    Download Image
-                 </a>
-            </div>
-        `;
-    } else {
-        imageContainer.innerHTML = `<p class="text-gray-400 text-center">No image could be generated for this topic.</p>`;
-    }
-
-    // 2. Build the main header with action buttons
-    const headerHtml = `
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-gray-700">
-            <div>
-                <h2 class="text-3xl font-bold" id="lesson-title">Topic: ${topic}</h2>
-                <p class="mt-1 text-gray-400">This plan includes new and classic resources to explore ${topic}.</p>
-            </div>
-            <div class="flex items-center space-x-2 mt-4 sm:mt-0">
-                <button id="pdf-btn" class="flex items-center text-sm bg-gray-800/60 hover:bg-purple-800/60 border border-gray-600 hover:border-purple-600 text-white font-medium py-2 px-3 rounded-md transition-colors duration-200">
-                    <span class="material-symbols-outlined mr-2">picture_as_pdf</span> PDF
-                </button>
-            </div>
-        </div>
-    `;
+    const tabMapping = {
+        newlyCreatedContent: "newlyCreatedContent-content",
+        newActivities: "newActivities-content",
+        movementAndMusic: "movementAndMusic-content",
+        socialAndEmotionalLearning: "socialAndEmotionalLearning-content",
+        classicResources: "classicResources-content",
+        montessoriConnections: "montessoriConnections-content",
+        teacherResources: "teacherResources-content",
+    };
     
-    // 3. Build content for each text-based tab
-    for (const tabKey in lessonPlan) {
-        if (tabKey === 'imagePrompt') continue; // Skip the image prompt data
-
-        const tabContentContainer = document.getElementById(`${tabKey}-content`);
-        if (tabContentContainer) {
-            const tabData = lessonPlan[tabKey];
-            let tagsHtml = '<div class="flex items-center flex-wrap gap-2 mb-6 tag-group">';
+    Object.entries(tabMapping).forEach(([tabKey, contentId]) => {
+        const tabData = data[tabKey];
+        const contentContainer = document.getElementById(contentId);
+        
+        if (tabData && contentContainer) {
             let contentHtml = '';
-            let isFirstTag = true;
-
-            for (const contentKey in tabData) {
-                const title = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                tagsHtml += `<button class="tag text-sm font-medium px-3 py-1 rounded-full cursor-pointer transition-colors duration-200 bg-purple-800/50 text-purple-200 hover:bg-purple-700 ${isFirstTag ? 'active-tag' : ''}" data-content-id="${tabKey}-${contentKey}">${title}</button>`;
+            // Loop through each sub-section (tag) in the tab's data
+            Object.entries(tabData).forEach(([tagKey, tagValue]) => {
+                // Create a readable title from the camelCase key (e.g., "originalRhyme" -> "Original Rhyme")
+                const title = tagKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
                 
-                let body = tabData[contentKey];
-                // Create clickable links for classic resources
-                if (tabKey === 'classicResources' && Array.isArray(body)) {
-                    body = `<ul class="list-disc list-inside space-y-2">${body.map(item => {
+                contentHtml += `<div class="mb-6">`;
+                contentHtml += `<h4 class="text-xl font-bold text-purple-300 mb-2">${title}</h4>`;
+                
+                // Handle content that is an array (like books or songs)
+                if (Array.isArray(tagValue)) {
+                    contentHtml += `<ul class="list-disc list-inside space-y-2">`;
+                    tagValue.forEach(item => {
+                        // Make each item a clickable Google search link
                         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(item)}`;
-                        return `<li><a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:underline">${item}</a></li>`;
-                    }).join('')}</ul>`;
-                } else if (Array.isArray(body)) {
-                    body = `<ul class="list-disc list-inside space-y-2">${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                        contentHtml += `<li><a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="text-white hover:text-purple-300 underline">${item}</a></li>`;
+                    });
+                    contentHtml += `</ul>`;
+                } else { // Handle content that is a single string
+                    contentHtml += `<div class="text-gray-300 leading-relaxed">${tagValue.replace(/\n/g, '<br>')}</div>`;
                 }
-
-
-                contentHtml += `
-                    <div id="${tabKey}-${contentKey}" class="tag-content ${isFirstTag ? 'active-tag-content' : ''}">
-                        <div class="prose prose-invert max-w-none text-gray-300">${body.replace(/\n/g, '<br>')}</div>
-                        <div class="mt-6 pt-4 border-t border-gray-700 text-right">
-                            <button class="share-btn flex items-center text-sm bg-transparent hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500 font-medium py-2 px-3 rounded-md transition-colors duration-200" data-category="${title}">
-                                <span class="material-symbols-outlined mr-2">groups</span> Share to Hub
-                            </button>
-                        </div>
-                    </div>
-                `;
-                isFirstTag = false;
-            }
-            tagsHtml += '</div>';
-            tabContentContainer.innerHTML = headerHtml + tagsHtml + contentHtml;
+                contentHtml += `</div>`;
+            });
+            contentContainer.innerHTML = contentHtml;
         }
-    }
-    
-    // 4. Add event listeners to the newly created buttons
-    setupActionButtons();
-
-    // 5. Show content and hide loader
-    mainContent.style.display = 'block';
-    loader.style.display = 'none';
+    });
 }
 
-// --- Event Listener Setup ---
-function setupTabInteractions() {
-    const tabs = document.querySelectorAll('#tabs-navigation a');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
+// Sets up all the interactive elements on the page (tabs, buttons)
+function setupPageInteractions(userId, userName) {
+    // Tab Switching Logic
+    const tabs = document.querySelectorAll('nav[aria-label="Tabs"] a');
+    const tabContents = document.querySelectorAll('.tab-content-container');
     tabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
+        tab.addEventListener('click', e => {
             e.preventDefault();
             tabs.forEach(item => item.classList.remove('active-tab'));
-            tabContents.forEach(content => content.classList.remove('active-tab-content'));
-            
             tab.classList.add('active-tab');
-            const tabId = tab.dataset.tab;
-            document.getElementById(`${tabId}-content`).classList.add('active-tab-content');
-        });
-    });
-}
-
-function setupActionButtons() {
-    // PDF download button
-    document.getElementById('pdf-btn')?.addEventListener('click', handlePdfDownload);
-
-    // Tag switching within a tab
-    document.querySelectorAll('.tag-group .tag').forEach(tag => {
-        tag.addEventListener('click', () => {
-            const parentGroup = tag.closest('.tag-group');
-            parentGroup.querySelectorAll('.tag').forEach(t => t.classList.remove('active-tag'));
-            tag.classList.add('active-tag');
-            
-            const contentId = tag.dataset.contentId;
-            const parentTabContent = tag.closest('.tab-content');
-            parentTabContent.querySelectorAll('.tag-content').forEach(c => c.classList.remove('active-tag-content'));
-            document.getElementById(contentId).classList.add('active-tag-content');
+            const targetId = tab.getAttribute('href').substring(1);
+            tabContents.forEach(content => {
+                if (content.id === targetId) {
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
         });
     });
 
-    // Share to Hub buttons
-    document.querySelectorAll('.share-btn').forEach(button => {
-        button.addEventListener('click', handleShareToHub);
-    });
+    // Setup action buttons
+    document.getElementById('pdf-btn').addEventListener('click', handlePdfDownload);
+    document.getElementById('share-btn').addEventListener('click', () => handleShareToHub(userId, userName));
 }
 
-// --- Action Button Handlers ---
+
+// --- Button Functionality ---
+
 function handlePdfDownload() {
-    if (!currentLessonData) return alert('Lesson data not available.');
-    
+    if (!currentLessonData) return alert('No lesson data to export.');
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    let y = 15;
-    const margin = 10;
-    const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
+    const doc = new jsPDF();
+    let y = 15; // Vertical position in PDF
 
-    const addText = (text, size, weight) => {
-        if (y > 280) { // New page if content overflows
+    const addText = (text, size, isTitle = false) => {
+        if (y > 280) { // Add new page if content overflows
             doc.addPage();
             y = 15;
         }
-        doc.setFontSize(size).setFont(undefined, weight);
-        const splitText = doc.splitTextToSize(text, maxWidth);
-        doc.text(splitText, margin, y);
-        y += (doc.getTextDimensions(splitText).h) + 4;
+        doc.setFontSize(size);
+        const plainText = text.replace(/<br>/g, '\n');
+        const splitText = doc.splitTextToSize(plainText, 180); // Wrap text
+        doc.text(splitText, 10, y);
+        y += (splitText.length * (size / 2.5)) + (isTitle ? 6 : 4); // Increment position
     };
 
-    addText(`Topic: ${currentTopic}`, 18, 'bold');
-    y += 5;
-
-    for (const tabKey in currentLessonData) {
-        if (tabKey === 'imagePrompt') continue;
-        const tabTitle = tabKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-        addText(tabTitle, 16, 'bold');
-        for (const contentKey in currentLessonData[tabKey]) {
-            const contentTitle = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            addText(contentTitle, 14, 'bold');
-            
-            let body = currentLessonData[tabKey][contentKey];
-            if (Array.isArray(body)) {
-                body.forEach(item => addText(`• ${item}`, 12, 'normal'));
-            } else {
-                addText(body, 12, 'normal');
-            }
-            y += 2;
+    addText(`Topic: ${currentLessonData.topic}`, 20, true);
+    
+    // Loop through the lesson data and add it to the PDF
+    Object.values(currentLessonData).forEach(tabContent => {
+        if (typeof tabContent === 'object') {
+            Object.entries(tabContent).forEach(([key, value]) => {
+                const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                addText(title, 16, true);
+                if (Array.isArray(value)) {
+                    value.forEach(item => addText(`- ${item}`, 12));
+                } else {
+                    addText(value, 12);
+                }
+                 y += 5; // Add extra space between sections
+            });
         }
-        y += 5;
-    }
-    doc.save(`${currentTopic}.pdf`);
+    });
+
+    doc.save(`${currentLessonData.topic}.pdf`);
 }
 
-async function handleShareToHub(event) {
-    const button = event.currentTarget;
-    const originalContent = button.innerHTML;
-    const contentToShare = button.closest('.tag-content').querySelector('.prose').innerHTML;
-    const category = button.dataset.category;
+async function handleShareToHub(userId, userName) {
+    if (!currentLessonData) return alert('No content to share.');
 
-    if (!currentUserSession) return alert('You must be logged in to share.');
+    const supabase = await getSupabase();
+    const button = document.getElementById('share-btn');
+    const originalContent = button.innerHTML;
+    
+    // Prepare data for the database
+    const postData = {
+        user_id: userId,
+        user_name: userName,
+        topic: currentLessonData.topic,
+        category: 'Full Lesson Plan',
+        content: JSON.stringify(currentLessonData, null, 2), // Save the whole lesson as a formatted string
+    };
 
     button.disabled = true;
     button.innerHTML = `<div class="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mx-auto"></div>`;
 
-    const { error } = await supabase.from('CommunityHub').insert([{
-        user_id: currentUserSession.user.id,
-        user_name: currentUserSession.user.user_metadata?.full_name || currentUserSession.user.email,
-        topic: currentTopic,
-        category: category,
-        content: contentToShare,
-    }]);
+    const { error } = await supabase.from('CommunityHub').insert([postData]);
 
     if (error) {
         alert('Error sharing to hub: ' + error.message);
         button.innerHTML = originalContent;
         button.disabled = false;
     } else {
-        button.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Shared!`;
+        button.innerHTML = `<span class="material-symbols-outlined">check_circle</span> Shared!`;
         setTimeout(() => {
             button.innerHTML = originalContent;
             button.disabled = false;
