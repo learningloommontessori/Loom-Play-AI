@@ -1,9 +1,7 @@
 // Path: /api/generate.js
 
-// This is a Vercel Edge Function that integrates with ClipDrop and Google's AI.
-export const config = {
-  runtime: 'edge',
-};
+// This is a Vercel Node.js Function. We've removed the 'edge' runtime for better compatibility.
+// It integrates with ClipDrop and Google's AI.
 
 // --- Helper function to generate an image with ClipDrop ---
 async function generateImageWithClipDrop(prompt, apiKey) {
@@ -27,6 +25,7 @@ async function generateImageWithClipDrop(prompt, apiKey) {
         
         // Convert the image response to a base64 data URL
         const imageBuffer = await response.arrayBuffer();
+        // Use Buffer, which is available in the Node.js runtime
         const base64Image = Buffer.from(imageBuffer).toString('base64');
         return `data:image/png;base64,${base64Image}`;
 
@@ -37,17 +36,18 @@ async function generateImageWithClipDrop(prompt, apiKey) {
 }
 
 // --- Main function that handles requests to this endpoint ---
-export default async function handler(request) {
-    const { topic } = await request.json();
+export default async function handler(request, response) {
+    // In the Node.js runtime, we get the body from request.body
+    const { topic } = request.body;
     const geminiApiKey = process.env.GEMINI_API_KEY;
     const clipdropApiKey = process.env.CLIPDROP_API_KEY;
 
     // Security and validation checks
     if (!topic) {
-        return new Response(JSON.stringify({ error: 'Topic is required.' }), { status: 400 });
+        return response.status(400).json({ error: 'Topic is required.' });
     }
     if (!geminiApiKey || !clipdropApiKey) {
-        return new Response(JSON.stringify({ error: 'API keys are not configured on the server.' }), { status: 500 });
+        return response.status(500).json({ error: 'API keys are not configured on the server.' });
     }
     
     // This prompt instructs the AI on its persona and the exact JSON structure required.
@@ -55,7 +55,7 @@ export default async function handler(request) {
   
   Your response MUST be ONLY a valid, complete JSON object. Do NOT use markdown or any text outside the JSON structure.
   All strings within the JSON must be properly escaped.
-  For 'classicStoryBooks', provide the title and author. For 'familiarRhymesAndSongs', provide the title.
+  For 'classicStoryBooks', provide the title and author. For 'familiarRhymesAndSongs', provide just the title.
   The JSON object must follow this exact structure:
   {
     "newlyCreatedContent": {
@@ -104,19 +104,19 @@ export default async function handler(request) {
         };
         
         // --- 1. Generate the lesson plan text ---
-        const textResponse = await fetch(textApiUrl, {
+        const textApiResponse = await fetch(textApiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(textPayload),
         });
 
-        if (!textResponse.ok) {
-            const errorBody = await textResponse.text();
+        if (!textApiResponse.ok) {
+            const errorBody = await textApiResponse.text();
             console.error('Gemini Text API Error:', errorBody);
             throw new Error('Failed to generate lesson plan from AI.');
         }
         
-        const textData = await textResponse.json();
+        const textData = await textApiResponse.json();
         const generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!generatedText) {
@@ -125,7 +125,6 @@ export default async function handler(request) {
         
         let lessonPlan;
         try {
-            // The most minimal, safe cleaning of the AI's response.
             const cleanedText = generatedText.replace(/```json/g, '').replace(/```/g, '').trim();
             lessonPlan = JSON.parse(cleanedText);
         } catch (parseError) {
@@ -140,14 +139,11 @@ export default async function handler(request) {
         }
         
         // --- 3. Send both back to the client ---
-        return new Response(JSON.stringify({ lessonPlan, imageUrl }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return response.status(200).json({ lessonPlan, imageUrl });
 
     } catch (error) {
         console.error('Error in generate handler:', error);
-        return new Response(JSON.stringify({ error: error.message || 'An internal server error occurred.' }), { status: 500 });
+        return response.status(500).json({ error: error.message || 'An internal server error occurred.' });
     }
 }
 
