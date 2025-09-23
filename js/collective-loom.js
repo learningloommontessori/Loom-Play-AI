@@ -114,7 +114,6 @@ function createPostCard(post) {
             <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                 <div>
                     <p class="text-xs text-gray-400">Shared by: <span class="font-medium text-purple-300">${post.user_name}</span></p>
-                    <!-- ** THE FIX **: Moved the date to the bottom -->
                     <p class="text-gray-500 text-xs mt-1">${formattedDate}</p>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -200,9 +199,16 @@ function filterPosts(searchTerm) {
     cards.forEach(card => {
         const title = card.querySelector('h3').textContent.toLowerCase();
         const content = card.querySelector('.prose').textContent.toLowerCase();
-        const author = card.querySelector('.font-medium').textContent.toLowerCase();
         
-        if (title.includes(term) || content.includes(term) || author.includes(term)) {
+        // ** THE FIX **: Explicitly get the author's name from the correct element.
+        const authorElement = card.querySelector('.font-medium.text-purple-300');
+        const authorName = authorElement ? authorElement.textContent.toLowerCase() : '';
+        
+        const isMatch = title.includes(term) || 
+                        content.includes(term) || 
+                        authorName.includes(term);
+
+        if (isMatch) {
             card.style.display = 'flex';
             visibleCount++;
         } else {
