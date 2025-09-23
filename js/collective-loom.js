@@ -85,8 +85,7 @@ function createPostCard(post) {
         day: 'numeric',
         year: 'numeric'
     });
-
-    // ** THE FIX **: Conditionally add a delete button if the post belongs to the current user.
+    
     let actionButtons = `
         <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
             View More <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
@@ -106,7 +105,6 @@ function createPostCard(post) {
             <div>
                 <div class="flex items-center justify-between mb-3">
                     <span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2.5 py-1 rounded-full">${post.category}</span>
-                    <p class="text-gray-400 text-xs">${formattedDate}</p>
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">From Lesson: ${post.topic}</h3>
                 <div class="text-gray-300 text-sm space-y-2 prose prose-invert prose-sm max-w-none line-clamp-4">
@@ -114,7 +112,11 @@ function createPostCard(post) {
                 </div>
             </div>
             <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
-                <p class="text-xs text-gray-400">Shared by: <span class="font-medium text-purple-300">${post.user_name}</span></p>
+                <div>
+                    <p class="text-xs text-gray-400">Shared by: <span class="font-medium text-purple-300">${post.user_name}</span></p>
+                    <!-- ** THE FIX **: Moved the date to the bottom -->
+                    <p class="text-gray-500 text-xs mt-1">${formattedDate}</p>
+                </div>
                 <div class="flex items-center space-x-3">
                     ${actionButtons}
                 </div>
@@ -131,13 +133,11 @@ function attachCardListeners() {
         });
     });
 
-    // ** THE FIX **: Add event listeners for the new delete buttons.
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', handleDeletePost);
     });
 }
 
-// ** THE FIX **: New function to handle the delete logic.
 async function handleDeletePost(event) {
     const button = event.currentTarget;
     const card = button.closest('.community-card');
@@ -153,8 +153,7 @@ async function handleDeletePost(event) {
             console.error('Error deleting post:', error);
             alert('Failed to delete post: ' + error.message);
         } else {
-            card.remove(); // Remove the card from the UI
-            // If the grid is now empty, show the empty state message
+            card.remove(); 
             if (document.querySelectorAll('.community-card').length === 0) {
                  document.getElementById('community-grid').style.display = 'none';
                  document.getElementById('empty-state').style.display = 'flex';
