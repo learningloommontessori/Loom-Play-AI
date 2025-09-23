@@ -1,21 +1,58 @@
 // js/reset-password.js
 
-// ** THE FIX **: Changed to use the getSupabase default export
 import getSupabase from './supabaseClient.js';
 let supabase;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // ** THE FIX **: Initialize supabase from the imported function
-    supabase = await getSupabase();
+    console.log('Reset Password script loaded.');
+    try {
+        supabase = await getSupabase();
+        console.log('Supabase client initialized successfully.');
+    } catch (e) {
+        console.error('Failed to initialize Supabase client:', e);
+        return;
+    }
+
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    if (forgotPasswordForm) {
+        console.log('Forgot Password form found. Attaching listener.');
+        handleForgotPasswordPage(forgotPasswordForm);
+    }
 
     const resetPasswordForm = document.getElementById('reset-password-form');
-
     if (resetPasswordForm) {
+        console.log('Reset Password form found. Setting up auth state change listener.');
         handleResetPasswordPage(resetPasswordForm);
     }
 });
 
-// --- Logic for Reset Password Page ---
+function handleForgotPasswordPage(form) {
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        console.log('Forgot Password form submitted.');
+        
+        const email = form.email.value;
+        const button = form.querySelector('button[type="submit"]');
+        
+        setLoading(button, true);
+        console.log(`Attempting to send reset link to: ${email}`);
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/reset-password.html',
+        });
+        
+        setLoading(button, false);
+
+        if (error) {
+            console.error('Supabase error on resetPasswordForEmail:', error);
+            showError(error.message);
+        } else {
+            console.log('Successfully requested password reset link.');
+            showSuccess('Password reset link has been sent to your email. Please check your inbox.');
+        }
+    });
+}
+
 function handleResetPasswordPage(form) {
     const newPasswordInput = document.getElementById('new-password');
     const confirmPasswordInput = document.getElementById('confirm-password');
@@ -24,29 +61,39 @@ function handleResetPasswordPage(form) {
     confirmPasswordInput.addEventListener('input', checkPasswordMatch);
     newPasswordInput.addEventListener('input', checkPasswordMatch);
 
-    // This event listener will be triggered when the user lands on the page
-    // after clicking the link in their email.
     supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event);
         if (event === 'PASSWORD_RECOVERY') {
+            console.log('Password recovery event detected. Attaching submit listener to reset form.');
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                console.log('Reset Password form submitted.');
                 const password = form['new-password'].value;
 
                 if (password !== form['confirm-password'].value) {
                     showError('Passwords do not match.');
                     return;
                 }
+                
+                const strengthText = document.getElementById('strength-text').textContent;
+                if (strengthText === 'Weak' || strengthText === 'Empty') {
+                    showError('Password is too weak. Please choose a stronger one.');
+                    return;
+                }
 
                 const button = form.querySelector('button[type="submit"]');
                 setLoading(button, true);
+                console.log('Attempting to update user password...');
 
                 const { error } = await supabase.auth.updateUser({ password });
 
                 setLoading(button, false);
 
                 if (error) {
+                    console.error('Supabase error on updateUser:', error);
                     showError(error.message);
                 } else {
+                    console.log('Password updated successfully.');
                     showSuccess('Your password has been reset successfully! You will be redirected to sign in shortly.');
                     setTimeout(() => {
                         window.location.href = '/sign-in.html';
@@ -58,7 +105,7 @@ function handleResetPasswordPage(form) {
 }
 
 
-// --- Shared UI Functions (Strength, Match, Messages, Loading) ---
+// --- Shared UI Functions ---
 function checkPasswordStrength() {
     const password = document.getElementById('new-password').value;
     const strengthText = document.getElementById('strength-text');
@@ -93,7 +140,7 @@ function checkPasswordStrength() {
         if (index < score) {
             bar.className = `h-1.5 flex-1 rounded-full ${currentStrength.color}`;
         } else {
-            bar.className = `h-1.5 flex-1 rounded-full bg-gray-700`;
+            bar.className = `h-1.sem flex-1 rounded-full bg-gray-700`;
         }
     });
 }
@@ -135,14 +182,14 @@ function checkPasswordMatch() {
 
 function showError(message) {
     const errorContainer = document.getElementById('error-message');
-    errorContainer.innerHTML = `<div class="flex"><div class="flex-shrink-0"><span class="material-symbols-outlined text-red-400">error</span></div><div class="ml-3"><p class="text-sm font-medium text-red-300">${message}</p></div></div>`;
+    errorContainer.innerHTML = `<div class="flex items-center"><div class="flex-shrink-0"><span class="material-symbols-outlined text-red-400">error</span></div><div class="ml-3"><p class="text-sm font-medium text-red-300">${message}</p></div></div>`;
     errorContainer.classList.remove('hidden');
     document.getElementById('success-message').classList.add('hidden');
 }
 
 function showSuccess(message) {
     const successContainer = document.getElementById('success-message');
-    successContainer.innerHTML = `<div class="flex"><div class="flex-shrink-0"><span class="material-symbols-outlined text-green-400">check_circle</span></div><div class="ml-3"><p class="text-sm font-medium text-green-300">${message}</p></div></div>`;
+    successContainer.innerHTML = `<div class="flex items-center"><div class="flex-shrink-0"><span class="material-symbols-outlined text-green-400">check_circle</span></div><div class="ml-3"><p class="text-sm font-medium text-green-300">${message}</p></div></div>`;
     successContainer.classList.remove('hidden');
     document.getElementById('error-message').classList.add('hidden');
 }
@@ -156,3 +203,4 @@ function setLoading(button, isLoading) {
     }
     button.disabled = isLoading;
 }
+
