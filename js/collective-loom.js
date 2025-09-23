@@ -1,6 +1,7 @@
 // js/collective-loom.js
 import getSupabase from './supabaseClient.js';
 let supabase;
+let currentUserId; // Variable to hold the current user's ID
 
 document.addEventListener('DOMContentLoaded', async () => {
     supabase = await getSupabase();
@@ -11,6 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     const user = session.user;
+    currentUserId = user.id; // Store the current user's ID
     const userName = user.user_metadata?.full_name || user.email;
 
     // Setup header
@@ -70,7 +72,6 @@ async function fetchAndDisplayPosts() {
         emptyState.style.display = 'flex';
     } else {
         grid.style.display = 'grid';
-        // Store full data in a global map for modal access
         window.communityPosts = new Map(posts.map(p => [p.post_id, p]));
         const postCards = posts.map(post => createPostCard(post)).join('');
         grid.innerHTML = postCards;
@@ -84,6 +85,21 @@ function createPostCard(post) {
         day: 'numeric',
         year: 'numeric'
     });
+
+    // ** THE FIX **: Conditionally add a delete button if the post belongs to the current user.
+    let actionButtons = `
+        <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
+            View More <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
+        </button>
+    `;
+
+    if (post.user_id === currentUserId) {
+        actionButtons = `
+            <button class="delete-btn text-gray-400 hover:text-red-500 transition-colors" title="Delete Post" data-post-id="${post.post_id}">
+                <span class="material-symbols-outlined">delete</span>
+            </button>
+        ` + actionButtons;
+    }
     
     return `
         <div class="community-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden flex flex-col justify-between p-6 hover:border-purple-500 border border-transparent transition-all duration-300">
@@ -99,9 +115,9 @@ function createPostCard(post) {
             </div>
             <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                 <p class="text-xs text-gray-400">Shared by: <span class="font-medium text-purple-300">${post.user_name}</span></p>
-                <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
-                    View More <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
-                </button>
+                <div class="flex items-center space-x-3">
+                    ${actionButtons}
+                </div>
             </div>
         </div>
     `;
@@ -114,6 +130,37 @@ function attachCardListeners() {
             showPostModal(postId);
         });
     });
+
+    // ** THE FIX **: Add event listeners for the new delete buttons.
+    document.querySelectorAll('.delete-btn').forEach(button => {
+        button.addEventListener('click', handleDeletePost);
+    });
+}
+
+// ** THE FIX **: New function to handle the delete logic.
+async function handleDeletePost(event) {
+    const button = event.currentTarget;
+    const card = button.closest('.community-card');
+    const postId = button.dataset.postId;
+
+    if (window.confirm('Are you sure you want to permanently delete this shared post?')) {
+        const { error } = await supabase
+            .from('CommunityHub')
+            .delete()
+            .eq('post_id', postId);
+
+        if (error) {
+            console.error('Error deleting post:', error);
+            alert('Failed to delete post: ' + error.message);
+        } else {
+            card.remove(); // Remove the card from the UI
+            // If the grid is now empty, show the empty state message
+            if (document.querySelectorAll('.community-card').length === 0) {
+                 document.getElementById('community-grid').style.display = 'none';
+                 document.getElementById('empty-state').style.display = 'flex';
+            }
+        }
+    }
 }
 
 function showPostModal(postId) {
