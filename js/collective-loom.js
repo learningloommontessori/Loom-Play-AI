@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(searchInput) {
         searchInput.addEventListener('input', (e) => filterPosts(e.target.value));
     }
+    
+    // Setup listeners for the new modal
+    setupModalListeners();
 });
 
 async function fetchAndDisplayPosts() {
@@ -45,10 +48,9 @@ async function fetchAndDisplayPosts() {
 
     loader.style.display = 'flex';
     grid.innerHTML = '';
-    grid.style.display = 'none'; // Hide grid initially
+    grid.style.display = 'none';
     emptyState.style.display = 'none';
 
-    // ** THE FIX **: Pointing to the correct 'CommunityHub' table
     let { data: posts, error } = await supabase
         .from('CommunityHub')
         .select('*')
@@ -68,8 +70,11 @@ async function fetchAndDisplayPosts() {
         emptyState.style.display = 'flex';
     } else {
         grid.style.display = 'grid';
+        // Store full data in a global map for modal access
+        window.communityPosts = new Map(posts.map(p => [p.post_id, p]));
         const postCards = posts.map(post => createPostCard(post)).join('');
         grid.innerHTML = postCards;
+        attachCardListeners();
     }
 }
 
@@ -79,13 +84,7 @@ function createPostCard(post) {
         day: 'numeric',
         year: 'numeric'
     });
-
-    // Sanitize content to prevent HTML injection if necessary
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = post.content;
-    const sanitizedContent = tempDiv.textContent || tempDiv.innerText || "";
-
-
+    
     return `
         <div class="community-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden flex flex-col justify-between p-6 hover:border-purple-500 border border-transparent transition-all duration-300">
             <div>
@@ -95,15 +94,57 @@ function createPostCard(post) {
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">From Lesson: ${post.topic}</h3>
                 <div class="text-gray-300 text-sm space-y-2 prose prose-invert prose-sm max-w-none line-clamp-4">
-                    ${sanitizedContent}
+                    ${post.content}
                 </div>
             </div>
-            <div class="mt-4 pt-4 border-t border-gray-700">
+            <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                 <p class="text-xs text-gray-400">Shared by: <span class="font-medium text-purple-300">${post.user_name}</span></p>
+                <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
+                    View More <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
+                </button>
             </div>
         </div>
     `;
 }
+
+function attachCardListeners() {
+    document.querySelectorAll('.view-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const postId = e.currentTarget.dataset.postId;
+            showPostModal(postId);
+        });
+    });
+}
+
+function showPostModal(postId) {
+    const post = window.communityPosts.get(postId);
+    if (!post) return;
+
+    document.getElementById('modal-title').textContent = `From Lesson: ${post.topic}`;
+    document.getElementById('modal-content').innerHTML = post.content;
+    document.getElementById('post-modal').classList.remove('hidden');
+}
+
+function setupModalListeners() {
+    const modal = document.getElementById('post-modal');
+    if (!modal) return;
+
+    const closeBtn = document.getElementById('modal-close-btn');
+    closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+    modal.addEventListener('click', (e) => {
+        if (e.target.id === 'post-modal') {
+            modal.classList.add('hidden');
+        }
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            modal.classList.add('hidden');
+        }
+    });
+}
+
 
 function filterPosts(searchTerm) {
     const term = searchTerm.toLowerCase();
