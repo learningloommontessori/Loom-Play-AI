@@ -83,7 +83,7 @@
                 </div>
                 
                 <div id="community-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Community posts will be dynamically inserted here by js/community.js -->
+                    <!-- Community posts will be dynamically inserted here -->
                 </div>
             </div>
         </main>
@@ -92,9 +92,9 @@
             <p class="text-sm text-gray-400">Made By: Monika Pathak</p>
         </footer>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/community.js"></script>
+    
+    <!-- ** THE FIX **: Changed src to point to the correct JS file and added type="module" -->
+    <script type="module" src="js/collective-loom.js"></script>
 </body>
 </html>
 
