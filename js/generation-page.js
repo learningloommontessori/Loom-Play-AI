@@ -92,7 +92,7 @@ function populatePage(lessonPlan, imageUrl, topic) {
             </div>
         `;
     } else {
-        imageContainer.innerHTML = `<p class="text-gray-400 text-center">No image could be generated for this topic.</p>`;
+        imageContainer.innerHTML = `<p class="text-gray-400 text-center">This feature will be added soon.</p>`;
     }
 
     // 2. Build the main header with action buttons

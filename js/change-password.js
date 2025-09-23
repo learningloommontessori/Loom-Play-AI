@@ -1,8 +1,13 @@
 // js/change-password.js
 
-import supabase from './supabaseClient.js';
+// ** THE FIX **: Changed to use the getSupabase default export
+import getSupabase from './supabaseClient.js';
+let supabase;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // ** THE FIX **: Initialize supabase from the imported function
+    supabase = await getSupabase();
+
     // 1. Authentication & User Info
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
@@ -13,21 +18,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userName = user.user_metadata?.full_name || user.email;
 
     // Setup header
-    document.getElementById('welcome-message').textContent = `Welcome, ${userName}!`;
-    document.getElementById('logoutButton').addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        window.location.href = '/';
-    });
+    const welcomeMessage = document.getElementById('welcome-message');
+    if (welcomeMessage) {
+        welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;
+        welcomeMessage.classList.remove('hidden');
+    }
+    const logoutButton = document.getElementById('logoutButton');
+    if(logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        });
+    }
     
     // 2. Setup form interactions
     const form = document.getElementById('change-password-form');
-    const newPasswordInput = document.getElementById('new-password');
-    const confirmPasswordInput = document.getElementById('confirm-new-password');
+    if (form) {
+        const newPasswordInput = document.getElementById('new-password');
+        const confirmPasswordInput = document.getElementById('confirm-new-password');
 
-    form.addEventListener('submit', handlePasswordUpdate);
-    newPasswordInput.addEventListener('input', checkPasswordStrength);
-    confirmPasswordInput.addEventListener('input', checkPasswordMatch);
-    newPasswordInput.addEventListener('input', checkPasswordMatch);
+        form.addEventListener('submit', handlePasswordUpdate);
+        newPasswordInput.addEventListener('input', checkPasswordStrength);
+        confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+        newPasswordInput.addEventListener('input', checkPasswordMatch);
+    }
 });
 
 async function handlePasswordUpdate(event) {
@@ -36,11 +50,13 @@ async function handlePasswordUpdate(event) {
     const newPassword = form['new-password'].value;
     const confirmPassword = form['confirm-new-password'].value;
 
+    const strengthText = document.getElementById('strength-text').textContent;
+
     if (newPassword !== confirmPassword) {
         showError('Passwords do not match.');
         return;
     }
-    if (document.getElementById('strength-text').textContent === 'Weak' || document.getElementById('strength-text').textContent === 'Empty') {
+    if (strengthText === 'Weak' || strengthText === 'Empty') {
         showError('Password is too weak. Please choose a stronger one.');
         return;
     }
@@ -55,12 +71,11 @@ async function handlePasswordUpdate(event) {
     if (error) {
         showError(error.message);
     } else {
-        // --- UPDATED LOGIC ---
-        // Show success message and then redirect to login after a delay.
-        showSuccess('Password updated successfully! You will be logged out and redirected to sign in.');
-        await supabase.auth.signOut(); // Log the user out immediately for security
+        showSuccess('Password updated successfully! For your security, you will be logged out and redirected to the sign-in page.');
         
-        setTimeout(() => {
+        // Wait a moment for the user to read the message, then log out and redirect.
+        setTimeout(async () => {
+            await supabase.auth.signOut();
             window.location.href = '/sign-in.html';
         }, 4000); // 4-second delay
     }
@@ -77,10 +92,12 @@ function checkPasswordStrength() {
     ];
 
     let score = 0;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+    if (password.length > 0) {
+        if (password.length >= 8) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+    }
 
     const strengthMap = {
         0: { text: "Empty", color: "bg-gray-700", textColor: "text-gray-500" },
@@ -89,13 +106,14 @@ function checkPasswordStrength() {
         3: { text: "Good", color: "bg-blue-500", textColor: "text-blue-400" },
         4: { text: "Strong", color: "bg-green-500", textColor: "text-green-400" },
     };
-
-    strengthText.textContent = strengthMap[score].text;
-    strengthText.className = `font-medium ${strengthMap[score].textColor}`;
+    
+    const currentStrength = strengthMap[score];
+    strengthText.textContent = currentStrength.text;
+    strengthText.className = `font-medium ${currentStrength.textColor}`;
 
     bars.forEach((bar, index) => {
         if (index < score) {
-            bar.className = `h-1.5 flex-1 rounded-full ${strengthMap[score].color}`;
+            bar.className = `h-1.5 flex-1 rounded-full ${currentStrength.color}`;
         } else {
             bar.className = `h-1.5 flex-1 rounded-full bg-gray-700`;
         }
@@ -154,8 +172,9 @@ function showSuccess(message) {
 function setLoading(button, isLoading) {
     const buttonText = button.querySelector('.button-text');
     const spinner = button.querySelector('.button-spinner');
-    buttonText.classList.toggle('hidden', isLoading);
-    spinner.classList.toggle('hidden', !isLoading);
+    if(buttonText && spinner){
+        buttonText.classList.toggle('hidden', isLoading);
+        spinner.classList.toggle('hidden', !isLoading);
+    }
     button.disabled = isLoading;
 }
-
