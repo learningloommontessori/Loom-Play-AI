@@ -1,8 +1,9 @@
-// js/community.js
-
-import supabase from './supabaseClient.js';
+// js/collective-loom.js
+import getSupabase from './supabaseClient.js';
+let supabase;
 
 document.addEventListener('DOMContentLoaded', async () => {
+    supabase = await getSupabase();
     // 1. Authentication & User Info
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
@@ -13,18 +14,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userName = user.user_metadata?.full_name || user.email;
 
     // Setup header
-    document.getElementById('welcome-message').textContent = `Welcome, ${userName}!`;
-    document.getElementById('logoutButton').addEventListener('click', async () => {
-        await supabase.auth.signOut();
-        window.location.href = '/';
-    });
+    const welcomeMessage = document.getElementById('welcome-message');
+    if (welcomeMessage) {
+        welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;
+        welcomeMessage.classList.remove('hidden');
+    }
+
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+        });
+    }
 
     // 2. Fetch and display community posts
     fetchAndDisplayPosts();
 
     // 3. Setup real-time search functionality
     const searchInput = document.getElementById('search-input');
-    searchInput.addEventListener('input', (e) => filterPosts(e.target.value));
+    if(searchInput) {
+        searchInput.addEventListener('input', (e) => filterPosts(e.target.value));
+    }
 });
 
 async function fetchAndDisplayPosts() {
@@ -33,11 +44,13 @@ async function fetchAndDisplayPosts() {
     const emptyState = document.getElementById('empty-state');
 
     loader.style.display = 'flex';
-    grid.style.display = 'grid'; // Keep grid layout during load
+    grid.innerHTML = '';
+    grid.style.display = 'none'; // Hide grid initially
     emptyState.style.display = 'none';
 
+    // ** THE FIX **: Pointing to the correct 'CommunityHub' table
     let { data: posts, error } = await supabase
-        .from('community_posts')
+        .from('CommunityHub')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -46,6 +59,7 @@ async function fetchAndDisplayPosts() {
     if (error) {
         console.error('Error fetching posts:', error);
         grid.innerHTML = `<p class="text-red-400 col-span-full text-center">Could not fetch community posts. Please try again later.</p>`;
+        grid.style.display = 'block';
         return;
     }
 
@@ -53,6 +67,7 @@ async function fetchAndDisplayPosts() {
         grid.style.display = 'none';
         emptyState.style.display = 'flex';
     } else {
+        grid.style.display = 'grid';
         const postCards = posts.map(post => createPostCard(post)).join('');
         grid.innerHTML = postCards;
     }
@@ -65,6 +80,12 @@ function createPostCard(post) {
         year: 'numeric'
     });
 
+    // Sanitize content to prevent HTML injection if necessary
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = post.content;
+    const sanitizedContent = tempDiv.textContent || tempDiv.innerText || "";
+
+
     return `
         <div class="community-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden flex flex-col justify-between p-6 hover:border-purple-500 border border-transparent transition-all duration-300">
             <div>
@@ -74,7 +95,7 @@ function createPostCard(post) {
                 </div>
                 <h3 class="text-lg font-semibold text-white mb-2">From Lesson: ${post.topic}</h3>
                 <div class="text-gray-300 text-sm space-y-2 prose prose-invert prose-sm max-w-none line-clamp-4">
-                    ${post.content}
+                    ${sanitizedContent}
                 </div>
             </div>
             <div class="mt-4 pt-4 border-t border-gray-700">
@@ -84,10 +105,6 @@ function createPostCard(post) {
     `;
 }
 
-/**
- * Filters community posts on the client-side based on the search term.
- * @param {string} searchTerm - The text from the search input.
- */
 function filterPosts(searchTerm) {
     const term = searchTerm.toLowerCase();
     const cards = document.querySelectorAll('.community-card');
@@ -106,7 +123,6 @@ function filterPosts(searchTerm) {
         }
     });
 
-    // Optional: Show a message if no posts match the search
     const emptyState = document.getElementById('empty-state');
     const grid = document.getElementById('community-grid');
     if (visibleCount === 0 && cards.length > 0) {
