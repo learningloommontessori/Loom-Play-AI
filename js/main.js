@@ -167,15 +167,8 @@ if (signInForm) {
 
             if (error) {
                 // --- 2. INTERPRET SERVER-SIDE ERROR (UPDATED) ---
-                const genericDbError = 'Database error saving new user';
-                const customErrorMessage = "This app is only available for Choithram School for now. Please register with your school ID.";
-
-                if (error.message.includes(genericDbError)) {
-                    // If Supabase returns the generic error, show our custom message
-                    showMessage('error', customErrorMessage);
-                } else {
-                    // For any other errors (e.g., "Password should be at least 6 characters"), show the original Supabase message
-                    showMessage('error', error.message);
+console.error("Sign Up Error:", error);                
+showMessage('error', error.message);
                 }
                 // --- END OF ERROR INTERPRETATION ---
             } else {
