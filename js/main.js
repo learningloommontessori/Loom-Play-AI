@@ -93,21 +93,42 @@ if (googleSignInBtn) {
 }
 
     const signInForm = document.getElementById('signInForm');
-    if (signInForm) {
-        signInForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            setLoadingState(signInForm, true);
-            const email = signInForm.email.value;
-            const password = signInForm.password.value;
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
-            if (error) {
-                showMessage('error', error.message);
+if (signInForm) {
+    signInForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        setLoadingState(signInForm, true);
+        const email = signInForm.email.value;
+        const password = signInForm.password.value;
+
+        // 1. Attempt to Log In
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            showMessage('error', error.message);
+            setLoadingState(signInForm, false);
+            return;
+        }
+
+        // 2. CHECK APPROVAL STATUS
+        if (data.user) {
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('is_approved')
+                .eq('id', data.user.id)
+                .single();
+
+            // If user exists but is NOT approved
+            if (profile && !profile.is_approved) {
+                await supabase.auth.signOut(); // Kick them out immediately
+                showMessage('error', 'Your account is waiting for admin approval.');
                 setLoadingState(signInForm, false);
             } else {
+                // User is approved, let them in
                 window.location.replace('/dashboard.html');
             }
-        });
-    }
+        }
+    });
+}
 
     const signUpForm = document.getElementById('signUpForm');
     if (signUpForm) {
@@ -119,18 +140,18 @@ if (googleSignInBtn) {
             const fullName = signUpForm['full-name'].value;
 
             // --- 1. CLIENT-SIDE VALIDATION (NEW) ---
-            const isEmailAllowed = (email) => {
-                const allowedDomain = '@choithramschool.com';
-                const specialAccount = 'learningloom.montessori@gmail.com';
-                return email.endsWith(allowedDomain) || email === specialAccount;
-            };
-
-            if (!isEmailAllowed(email)) {
+          //  const isEmailAllowed = (email) => {
+        //        const allowedDomain = '@choithramschool.com';
+      //          const specialAccount = 'learningloom.montessori@gmail.com';
+    //            return email.endsWith(allowedDomain) || email === specialAccount;
+  //          };
+//
+            //if (!isEmailAllowed(email)) {
                 // Show custom error message immediately without contacting Supabase
-                const customErrorMessage = "This app is only available for Choithram School for now. Please register with your school ID.";
-                showMessage('error', customErrorMessage);
-                return; // Stop the form submission
-            }
+                //const customErrorMessage = "This app is only available for Choithram School for now. Please register with your school ID.";
+               // showMessage('error', customErrorMessage);
+             //   return; // Stop the form submission
+           // }
             // --- END OF CLIENT-SIDE VALIDATION ---
 
             setLoadingState(signUpForm, true);

@@ -12,6 +12,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
+// --- NEW: CHECK APPROVAL ON DASHBOARD LOAD ---
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_approved')
+        .eq('id', user.id)
+        .single();
+
+    if (profile && !profile.is_approved) {
+        alert("Your account is pending admin approval.");
+        await supabase.auth.signOut();
+        window.location.href = '/sign-in.html';
+        return;
+
         // 2. If a user is found, display their information
         const userName = user.user_metadata?.full_name;
         
