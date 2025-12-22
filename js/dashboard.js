@@ -12,55 +12,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-        // --- NEW: SELF-REPAIR & APPROVAL SYSTEM ---
+        // --- APPROVAL SYSTEM ---
         
-        // A. Try to find the user's profile
-        let { data: profile } = await supabase
+        // 1. Fetch the user's profile
+        const { data: profile, error } = await supabase
             .from('profiles')
-            .select('is_approved, is_admin')
+            .select('*')
             .eq('id', user.id)
             .single();
 
-        // B. If profile is MISSING (because we killed the trigger), create it now!
-        if (!profile) {
-            console.log("Profile missing. Creating manual profile...");
-            const { error: insertError } = await supabase
-                .from('profiles')
-                .insert([{
-                    id: user.id,
-                    email: user.email,
-                    full_name: user.user_metadata?.full_name || 'New Weaver',
-                    is_approved: false, // Default to Pending
-                    is_admin: false
-                }]);
-            
-            if (insertError) {
-                console.error("Manual profile creation failed:", insertError);
-                alert("Error setting up profile. Please contact support.");
-                await supabase.auth.signOut();
-                window.location.href = '/sign-in.html';
-                return;
-            }
-
-            // After inserting, we treat them as "Pending" immediately
-            alert("Account created successfully! Your thread is now waiting for Admin Approval.");
-            await supabase.auth.signOut();
-            window.location.href = '/sign-in.html';
-            return;
-        }
-
-        // C. If profile exists but is NOT Approved (and NOT Admin)
-        if (!profile.is_approved && !profile.is_admin) {
+        // 2. Security Check
+        // If the profile exists, but they are NOT approved AND NOT an admin...
+        if (profile && !profile.is_approved && !profile.is_admin) {
             alert("Your account is pending admin approval.");
-            await supabase.auth.signOut();
+            await supabase.auth.signOut(); // Log them out immediately
             window.location.href = '/sign-in.html';
             return;
         }
 
-        // --- END OF APPROVAL CHECK ---
+        // (Optional Safety) If for some reason the profile is missing entirely
+        if (!profile) {
+            console.warn("Profile missing. Database trigger might have delayed.");
+            // We usually let them pass or ask them to re-login
+        }
 
-        // 2. If approved, display their information
-        const userName = user.user_metadata?.full_name;
+        // --- END OF CHECK ---
+
+        // 3. Display User Info
+        // We try to get the name from the Auth metadata first, then the Profile
+        const userName = user.user_metadata?.full_name || profile?.full_name || "Weaver";
         
         if (welcomeMessage) {
             welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;

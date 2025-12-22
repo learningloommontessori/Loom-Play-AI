@@ -111,81 +111,62 @@ if (signInForm) {
 
         // 2. CHECK APPROVAL STATUS
         if (data.user) {
-            const { data: profile, error: profileError } = await supabase
+            const { data: profile } = await supabase
                 .from('profiles')
-                .select('is_approved')
+                .select('*')
                 .eq('id', data.user.id)
                 .single();
 
             // If user exists but is NOT approved
-            if (profile && !profile.is_approved) {
+            if (profile && !profile.is_approved && !profile.is_admin) {
                 await supabase.auth.signOut(); // Kick them out immediately
                 showMessage('error', 'Your account is waiting for admin approval.');
                 setLoadingState(signInForm, false);
-            } else {
-                // User is approved, let them in
-                window.location.replace('/dashboard.html');
+            return;
+
+            } // 2. Success! Redirect
+        window.location.replace('/dashboard.html');
             }
         }
     });
 }
 
 const signUpForm = document.getElementById('signUpForm');
-    if (signUpForm) {
-        signUpForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            setLoadingState(signUpForm, true);
+if (signUpForm) {
+    signUpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        setLoadingState(signUpForm, true);
 
-            const email = signUpForm.email.value;
-            const password = signUpForm.password.value;
-            const fullName = signUpForm['full-name'].value;
+        const email = signUpForm.email.value;
+        const password = signUpForm.password.value;
+        const fullName = signUpForm['full-name'].value;
 
-            // 1. Sign Up the User
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: { full_name: fullName },
-                    emailRedirectTo: `${window.location.origin}/dashboard.html`
-                }
-            });
-
-            if (error) {
-                console.error("Sign Up Error:", error);
-                showMessage('error', error.message);
-                setLoadingState(signUpForm, false);
-                return;
+        // 1. Sign Up the User
+        // We let the Database Trigger handle the profile creation automatically now.
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { full_name: fullName },
+                emailRedirectTo: `${window.location.origin}/dashboard.html`
             }
+        });
 
-            // 2. MANUAL PROFILE CREATION (The Fix)
-            // We create the profile directly here instead of relying on the database trigger
-            if (data.user) {
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert([{
-                        id: data.user.id,
-                        email: email,
-                        full_name: fullName,
-                        is_approved: false, // Default to pending
-                        is_admin: false
-                    }]);
-                
-                if (profileError) {
-                    console.error("Profile Creation Warning:", profileError);
-                    // Note: We intentionally don't stop the success message here.
-                    // Even if the profile fails, the Auth account is created.
-                }
-            }
-
-            // 3. Success Message
+        // 2. Handle Response
+        if (error) {
+            console.error("Sign Up Error:", error);
+            showMessage('error', error.message);
+        } else {
+            // 3. Success!
             showMessage('success', 'Please check your email for a verification link.');
             signUpForm.reset();
             const submitButton = signUpForm.querySelector('button[type="submit"]');
             if(submitButton) submitButton.disabled = true;
-            
-            setLoadingState(signUpForm, false);
-        });
-    }
+        }
+        
+        setLoadingState(signUpForm, false);
+    });
+}    
 }
 
 // --- Run the authentication logic ---
