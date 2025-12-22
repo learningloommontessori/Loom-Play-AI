@@ -169,7 +169,7 @@ if (signInForm) {
                 // --- 2. INTERPRET SERVER-SIDE ERROR (UPDATED) ---
 console.error("Sign Up Error:", error);                
 showMessage('error', error.message);
-                }
+                
                 // --- END OF ERROR INTERPRETATION ---
             } else {
                 showMessage('success', 'Please check your email for a verification link.');
