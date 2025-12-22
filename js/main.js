@@ -130,33 +130,18 @@ if (signInForm) {
     });
 }
 
-    const signUpForm = document.getElementById('signUpForm');
+const signUpForm = document.getElementById('signUpForm');
     if (signUpForm) {
         signUpForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            setLoadingState(signUpForm, true);
 
             const email = signUpForm.email.value;
             const password = signUpForm.password.value;
             const fullName = signUpForm['full-name'].value;
 
-            // --- 1. CLIENT-SIDE VALIDATION (NEW) ---
-          //  const isEmailAllowed = (email) => {
-        //        const allowedDomain = '@choithramschool.com';
-      //          const specialAccount = 'learningloom.montessori@gmail.com';
-    //            return email.endsWith(allowedDomain) || email === specialAccount;
-  //          };
-//
-            //if (!isEmailAllowed(email)) {
-                // Show custom error message immediately without contacting Supabase
-                //const customErrorMessage = "This app is only available for Choithram School for now. Please register with your school ID.";
-               // showMessage('error', customErrorMessage);
-             //   return; // Stop the form submission
-           // }
-            // --- END OF CLIENT-SIDE VALIDATION ---
-
-            setLoadingState(signUpForm, true);
-
-            const { error } = await supabase.auth.signUp({
+            // 1. Sign Up the User
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -166,18 +151,38 @@ if (signInForm) {
             });
 
             if (error) {
-                // --- 2. INTERPRET SERVER-SIDE ERROR (UPDATED) ---
-console.error("Sign Up Error:", error);                
-showMessage('error', error.message);
-                
-                // --- END OF ERROR INTERPRETATION ---
-            } else {
-                showMessage('success', 'Please check your email for a verification link.');
-                signUpForm.reset();
-                 // Disable button after successful submission until terms are re-checked
-                const submitButton = signUpForm.querySelector('button[type="submit"]');
-                if(submitButton) submitButton.disabled = true;
+                console.error("Sign Up Error:", error);
+                showMessage('error', error.message);
+                setLoadingState(signUpForm, false);
+                return;
             }
+
+            // 2. MANUAL PROFILE CREATION (The Fix)
+            // We create the profile directly here instead of relying on the database trigger
+            if (data.user) {
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert([{
+                        id: data.user.id,
+                        email: email,
+                        full_name: fullName,
+                        is_approved: false, // Default to pending
+                        is_admin: false
+                    }]);
+                
+                if (profileError) {
+                    console.error("Profile Creation Warning:", profileError);
+                    // Note: We intentionally don't stop the success message here.
+                    // Even if the profile fails, the Auth account is created.
+                }
+            }
+
+            // 3. Success Message
+            showMessage('success', 'Please check your email for a verification link.');
+            signUpForm.reset();
+            const submitButton = signUpForm.querySelector('button[type="submit"]');
+            if(submitButton) submitButton.disabled = true;
+            
             setLoadingState(signUpForm, false);
         });
     }
