@@ -68,7 +68,7 @@ async function generateAndDisplayContent(topic, language, token) {
         
         populatePage(lessonPlan, imageUrl, topic);
 // Enable the Image Tab
-setupImageTab(topic);
+setupImageTab(topic, lessonPlan);
 
     } catch (err) {
         console.error('Error fetching generated content:', err);
@@ -268,67 +268,121 @@ async function handleShareToHub(event) {
 }
 // --- NEW: Image Tab Logic ---
 
-function setupImageTab(topic) {
-    const generateBtn = document.getElementById('tab-generate-image-btn');
-    const initialState = document.getElementById('image-initial-state');
-    const resultState = document.getElementById('image-result-state');
-    const loader = document.getElementById('tab-image-loader');
-    const img = document.getElementById('tab-generated-image');
-    const actions = document.getElementById('image-actions');
-    const regenBtn = document.getElementById('regenerate-image-btn');
-    const downloadBtn = document.getElementById('download-image-btn');
+// --- ADVANCED IMAGE GALLERY LOGIC ---
 
-    if (!generateBtn || !img) return;
+function setupImageTab(topic, lessonPlan) {
+    const galleryContainer = document.getElementById('image-gallery-grid');
+    if (!galleryContainer) return;
 
-    const runGeneration = () => {
-        // UI Switch
-        initialState.classList.add('hidden');
-        resultState.classList.remove('hidden');
-        loader.classList.remove('hidden');
-        img.classList.add('hidden');
-        actions.classList.add('hidden');
+    // 1. Clear previous results (if any)
+    galleryContainer.innerHTML = '';
 
-        // Create Magic URL
-        const seed = Math.floor(Math.random() * 1000000);
-        // Clean the topic to ensure it's safe for the URL
-        const cleanTopic = topic.replace(/[^a-zA-Z0-9 ]/g, ''); 
-        const safePrompt = encodeURIComponent(`educational illustration of ${cleanTopic}, high quality, clear, school friendly, coloring page style`);
+    // 2. Define a Helper to Create Cards
+    const createCard = (title, type, promptContext) => {
+        // Create unique ID for this card
+        const uniqueId = Math.random().toString(36).substr(2, 9);
         
-        const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
+        // Construct the Card HTML
+        const cardHtml = `
+            <div class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden shadow-lg flex flex-col">
+                <div class="p-4 border-b border-gray-700 bg-gray-900/50">
+                    <span class="text-xs font-bold uppercase text-purple-400 tracking-wider">${type}</span>
+                    <h4 class="text-lg font-bold text-white mt-1">${title}</h4>
+                </div>
+                
+                <div class="p-4 flex-grow flex flex-col items-center justify-center min-h-[300px] bg-black/20 relative">
+                    <div id="start-${uniqueId}" class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                        <p class="text-gray-500 text-sm mb-4 line-clamp-3 italic">"${promptContext.substring(0, 80)}..."</p>
+                        <button id="btn-${uniqueId}" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full font-medium transition shadow-lg flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm">auto_awesome</span> Generate Visual
+                        </button>
+                    </div>
 
-        img.src = imageUrl;
+                    <div id="loader-${uniqueId}" class="hidden absolute inset-0 bg-gray-900 flex-col items-center justify-center z-20">
+                        <div class="animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent mb-3"></div>
+                        <p class="text-xs text-purple-300 animate-pulse">Painting...</p>
+                    </div>
 
-        img.onload = () => {
-            loader.classList.add('hidden');
-            img.classList.remove('hidden');
-            actions.classList.remove('hidden');
-        };
+                    <img id="img-${uniqueId}" class="hidden w-full h-full object-cover z-30 transition-opacity duration-500" alt="${title}" />
+                    
+                    <a id="down-${uniqueId}" class="hidden absolute bottom-2 right-2 bg-black/70 hover:bg-black text-white p-2 rounded-full z-40 cursor-pointer" title="Download">
+                        <span class="material-symbols-outlined text-sm">download</span>
+                    </a>
+                </div>
+            </div>
+        `;
 
-        img.onerror = () => {
-            loader.classList.add('hidden');
-            initialState.classList.remove('hidden');
-            alert("Image generation failed. Please try again.");
-        };
+        // Insert Card into DOM
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = cardHtml;
+        const cardElement = tempDiv.firstElementChild;
+        galleryContainer.appendChild(cardElement);
+
+        // 3. Attach Logic to this specific Card
+        const btn = document.getElementById(`btn-${uniqueId}`);
+        const loader = document.getElementById(`loader-${uniqueId}`);
+        const img = document.getElementById(`img-${uniqueId}`);
+        const startDiv = document.getElementById(`start-${uniqueId}`);
+        const downloadBtn = document.getElementById(`down-${uniqueId}`);
+
+        btn.addEventListener('click', () => {
+            // UI Switch
+            startDiv.classList.add('hidden');
+            loader.classList.remove('hidden');
+
+            // Generate Prompt
+            const seed = Math.floor(Math.random() * 1000000);
+            // Specific prompt based on the content text
+            const specificPrompt = encodeURIComponent(`educational illustration for ${type}: ${promptContext.substring(0, 100)}, ${topic}, children's book style, clear, colorful`);
+            
+            const imageUrl = `https://image.pollinations.ai/prompt/${specificPrompt}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
+
+            img.src = imageUrl;
+
+            img.onload = () => {
+                loader.classList.add('hidden');
+                img.classList.remove('hidden');
+                downloadBtn.classList.remove('hidden');
+                downloadBtn.href = imageUrl;
+                downloadBtn.download = `${type}_${seed}.jpg`;
+            };
+
+            img.onerror = () => {
+                loader.classList.add('hidden');
+                startDiv.classList.remove('hidden'); // Reset
+                alert("Generation failed. Try again.");
+            };
+        });
     };
 
-    // Attach Listeners (Clone to prevent duplicates)
-    const newGenBtn = generateBtn.cloneNode(true);
-    generateBtn.parentNode.replaceChild(newGenBtn, generateBtn);
-    newGenBtn.addEventListener('click', runGeneration);
+    // --- 4. SCAN THE LESSON PLAN ---
 
-    if (regenBtn) {
-        const newRegenBtn = regenBtn.cloneNode(true);
-        regenBtn.parentNode.replaceChild(newRegenBtn, regenBtn);
-        newRegenBtn.addEventListener('click', runGeneration);
+    // A. Main Topic Card (Always there)
+    createCard(topic, "Lesson Cover", `A cover image representing ${topic}`);
+
+    // B. Scan "Newly Created" for Rhymes and Stories
+    if (lessonPlan.newlyCreatedContent) {
+        Object.entries(lessonPlan.newlyCreatedContent).forEach(([key, content]) => {
+            const lowerKey = key.toLowerCase();
+            if (lowerKey.includes('rhyme') || lowerKey.includes('poem')) {
+                createCard("Nursery Rhyme", "Rhyme", content);
+            }
+            if (lowerKey.includes('story') || lowerKey.includes('narrative')) {
+                createCard("Short Story", "Story", content);
+            }
+        });
     }
 
-    if (downloadBtn) {
-        downloadBtn.onclick = () => {
-            const link = document.createElement('a');
-            link.href = img.src;
-            link.download = `${topic.replace(/\s+/g, '_')}_visual.jpg`;
-            link.target = '_blank';
-            link.click();
-        };
+    // C. Scan "New Activities" for ALL sub-tabs
+    if (lessonPlan.newActivities) {
+        Object.entries(lessonPlan.newActivities).forEach(([key, content]) => {
+            // Format title: "sensoryActivity" -> "Sensory Activity"
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            
+            // If content is an array (list), join it. If string, use it.
+            const promptText = Array.isArray(content) ? content.join(" ") : content;
+            
+            createCard(title, "Activity", promptText);
+        });
     }
 }
