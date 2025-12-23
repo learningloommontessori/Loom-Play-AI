@@ -265,6 +265,7 @@ async function handleShareToHub(event) {
             button.disabled = false;
         }, 2500);
     }
+}
 // --- NEW: Image Tab Logic ---
 
 function setupImageTab(topic) {
@@ -331,4 +332,3 @@ function setupImageTab(topic) {
         };
     }
 }
-
