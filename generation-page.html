@@ -106,8 +106,43 @@
                     
                     <!-- Tab Content Area: JS will populate this -->
                     <div class="w-full lg:w-3/4 lg:pl-8" id="content-container">
-                       <!-- Empty containers for each tab's content -->
-                        <div id="generatedImage-content" class="tab-content"></div>
+                     
+
+  <!-- Empty containers for each tab's content -->
+                        <div id="generatedImage-content" class="tab-content">
+    <div class="p-6 flex flex-col items-center justify-center min-h-[400px]">
+        
+        <div id="image-initial-state" class="text-center">
+            <div class="text-6xl mb-4">🎨</div>
+            <h3 class="text-xl font-bold text-gray-200 mb-2">Visualize This Lesson</h3>
+            <p class="text-gray-400 mb-6 max-w-md mx-auto">Click below to generate a free, AI-illustrated visual aid for this topic.</p>
+            
+            <button id="tab-generate-image-btn" class="bg-purple-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-purple-700 transition shadow-lg flex items-center gap-2 mx-auto">
+                <span class="material-symbols-outlined">auto_awesome</span>
+                <span>Generate Image</span>
+            </button>
+        </div>
+
+        <div id="image-result-state" class="hidden w-full flex flex-col items-center">
+            
+            <div id="tab-image-loader" class="text-center py-10">
+                <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-purple-600 border-t-transparent mb-4"></div>
+                <p class="text-gray-400 animate-pulse">Painting your idea... (approx 5-10s)</p>
+            </div>
+
+            <img id="tab-generated-image" src="" alt="Generated Visual" class="hidden w-full max-w-2xl rounded-lg shadow-xl border-2 border-purple-500 mb-6" />
+
+            <div id="image-actions" class="hidden flex gap-4">
+                <button id="download-image-btn" class="flex items-center gap-2 px-4 py-2 border border-gray-600 rounded hover:bg-gray-800 text-gray-300 transition">
+                    <span class="material-symbols-outlined">download</span> Download
+                </button>
+                <button id="regenerate-image-btn" class="flex items-center gap-2 px-4 py-2 text-purple-400 font-medium hover:bg-purple-900/20 rounded transition">
+                    <span class="material-symbols-outlined">refresh</span> Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
                         <div id="newlyCreatedContent-content" class="tab-content active-tab-content"></div>
                         <div id="newActivities-content" class="tab-content"></div>
                         <div id="classicResources-content" class="tab-content"></div>

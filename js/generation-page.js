@@ -67,6 +67,8 @@ async function generateAndDisplayContent(topic, language, token) {
         currentLessonData = lessonPlan; // Store for export functions
         
         populatePage(lessonPlan, imageUrl, topic);
+// Enable the Image Tab
+setupImageTab(topic);
 
     } catch (err) {
         console.error('Error fetching generated content:', err);
@@ -78,23 +80,7 @@ async function generateAndDisplayContent(topic, language, token) {
 function populatePage(lessonPlan, imageUrl, topic) {
     const mainContent = document.getElementById('main-content');
 
-    // 1. Populate the Generated Image Tab
-    const imageContainer = document.getElementById('generatedImage-content');
-    if (imageUrl) {
-        imageContainer.innerHTML = `
-            <div class="flex flex-col items-center">
-                 <h2 class="text-2xl font-bold mb-4">Generated Coloring Page</h2>
-                 <img src="${imageUrl}" alt="Generated coloring page for ${topic}" class="w-full max-w-md h-auto rounded-lg border-2 border-purple-500 shadow-lg">
-                 <a href="${imageUrl}" download="${topic}-coloring-page.png" class="mt-4 inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition duration-300">
-                    <span class="material-symbols-outlined mr-2">download</span>
-                    Download Image
-                 </a>
-            </div>
-        `;
-    } else {
-        imageContainer.innerHTML = `<p class="text-gray-400 text-center">This feature will be added soon.</p>`;
-    }
-
+  
     // 2. Build the main header with action buttons
     const headerHtml = `
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-gray-700">
@@ -279,4 +265,70 @@ async function handleShareToHub(event) {
             button.disabled = false;
         }, 2500);
     }
+// --- NEW: Image Tab Logic ---
+
+function setupImageTab(topic) {
+    const generateBtn = document.getElementById('tab-generate-image-btn');
+    const initialState = document.getElementById('image-initial-state');
+    const resultState = document.getElementById('image-result-state');
+    const loader = document.getElementById('tab-image-loader');
+    const img = document.getElementById('tab-generated-image');
+    const actions = document.getElementById('image-actions');
+    const regenBtn = document.getElementById('regenerate-image-btn');
+    const downloadBtn = document.getElementById('download-image-btn');
+
+    if (!generateBtn || !img) return;
+
+    const runGeneration = () => {
+        // UI Switch
+        initialState.classList.add('hidden');
+        resultState.classList.remove('hidden');
+        loader.classList.remove('hidden');
+        img.classList.add('hidden');
+        actions.classList.add('hidden');
+
+        // Create Magic URL
+        const seed = Math.floor(Math.random() * 1000000);
+        // Clean the topic to ensure it's safe for the URL
+        const cleanTopic = topic.replace(/[^a-zA-Z0-9 ]/g, ''); 
+        const safePrompt = encodeURIComponent(`educational illustration of ${cleanTopic}, high quality, clear, school friendly, coloring page style`);
+        
+        const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
+
+        img.src = imageUrl;
+
+        img.onload = () => {
+            loader.classList.add('hidden');
+            img.classList.remove('hidden');
+            actions.classList.remove('hidden');
+        };
+
+        img.onerror = () => {
+            loader.classList.add('hidden');
+            initialState.classList.remove('hidden');
+            alert("Image generation failed. Please try again.");
+        };
+    };
+
+    // Attach Listeners (Clone to prevent duplicates)
+    const newGenBtn = generateBtn.cloneNode(true);
+    generateBtn.parentNode.replaceChild(newGenBtn, generateBtn);
+    newGenBtn.addEventListener('click', runGeneration);
+
+    if (regenBtn) {
+        const newRegenBtn = regenBtn.cloneNode(true);
+        regenBtn.parentNode.replaceChild(newRegenBtn, regenBtn);
+        newRegenBtn.addEventListener('click', runGeneration);
+    }
+
+    if (downloadBtn) {
+        downloadBtn.onclick = () => {
+            const link = document.createElement('a');
+            link.href = img.src;
+            link.download = `${topic.replace(/\s+/g, '_')}_visual.jpg`;
+            link.target = '_blank';
+            link.click();
+        };
+    }
 }
+
