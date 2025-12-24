@@ -32,28 +32,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         errorMessageContainer.classList.remove('hidden');
     };
 
-    if (generatorForm) {
+  if (generatorForm) {
         generatorForm.addEventListener('submit', (event) => {
             event.preventDefault();
             
             const topicInput = document.getElementById('topic');
             const topic = topicInput.value.trim();
             
-            // Get the selected language from the radio buttons
+            // Get the selected language
             const selectedLanguage = document.querySelector('input[name="language"]:checked').value;
+
+            // --- NEW: Get the Class Level ---
+            const ageGroup = document.getElementById('age-select').value; 
 
             if (!topic) {
                 showErrorMessage("Please enter a topic to continue.");
                 return;
             }
 
-            // Save both topic and language to localStorage
+            // Save ALL THREE preferences to localStorage
             localStorage.setItem('currentTopic', topic);
             localStorage.setItem('generationLanguage', selectedLanguage);
+            localStorage.setItem('selectedAge', ageGroup); // <--- Saving the Class Level!
             
             // Redirect to the generation page
             window.location.href = '/generation-page.html';
         });
     }
 });
-
