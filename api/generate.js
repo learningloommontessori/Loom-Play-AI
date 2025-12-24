@@ -13,8 +13,10 @@ export default async function handler(request) {
   }
 
   try {
-    // --- 1. GET DATA, AND AUTHENTICATE USER ---
-    const { topic, language } = await request.json(); 
+    // --- 1. GET DATA (Including Age) ---
+    // ** THE FIX **: Extract 'age' from the request body
+    const { topic, language, age } = await request.json(); 
+    
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.split(' ')[1];
 
@@ -22,7 +24,7 @@ export default async function handler(request) {
         return new Response(JSON.stringify({ error: 'Authentication token is required.' }), { status: 401 });
     }
     
-    // Use the ANON key ONLY to verify the user's token
+    // Auth Check
     const supabaseUserClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
     const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
 
@@ -36,17 +38,26 @@ export default async function handler(request) {
         return new Response(JSON.stringify({ error: 'Topic and API Key are required.' }), { status: 400 });
     }
     
-    const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers specializing in the Montessori method for children aged 3-6.
-  
-    Your response MUST be ONLY a valid, complete JSON object, translated entirely into the requested language: ${language}. Do NOT use markdown. All strings must be properly escaped.
-    For 'classicStoryBooks', provide title and author. For 'familiarRhymesAndSongs', provide just the title.
+    // ** THE FIX **: Dynamic Prompt based on Age Group
+    const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers.
+    
+    Topic: "${topic}"
+    Target Audience: ${age || "Children aged 3-6"} 
+    Language: Write strictly in ${language}.
+
+    CRITICAL INSTRUCTION: Adapt the complexity, vocabulary, and activities specifically for the "${age}" level.
+    - If "Nursery": Focus on sensory exploration, gross motor skills, very simple language, and repetition.
+    - If "Juniors": Balance sensory play with early cognitive concepts (patterns, sorting).
+    - If "Seniors": Include more complex questions, early math/reading readiness, and multi-step activities.
+
+    Your response MUST be ONLY a valid, complete JSON object. Do NOT use markdown.
     The JSON object must follow this exact structure:
     {"newlyCreatedContent":{"originalRhyme": "...", "originalMiniStory": "..."},"newActivities":{"artCraftActivity": "...", "motorSkillsActivity": "...", "sensoryExplorationActivity": "..."},"movementAndMusic":{"grossMotorActivity": "...", "fineMotorActivity": "...", "actionSong": "..."},"socialAndEmotionalLearning":{"graceAndCourtesy": "...", "problemSolvingScenario": "..."},"classicResources":{"familiarRhymesAndSongs": ["..."], "classicStoryBooks": ["..."]},"montessoriConnections":{"traditionalUseOfMaterials": "...", "newWaysToUseMaterials": "..."},"teacherResources":{"observationCues": "...", "environmentSetup": "..."}}`;
     
     const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
     const textPayload = {
         systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ parts: [{ text: `Topic: ${topic}` }] }],
+        contents: [{ parts: [{ text: `Generate a Montessori lesson plan for: ${topic}` }] }],
         generationConfig: { responseMimeType: "application/json", temperature: 0.8, maxOutputTokens: 8192 },
     };
     
@@ -70,7 +81,6 @@ export default async function handler(request) {
     const lessonPlan = JSON.parse(generatedText.replace(/```json/g, '').replace(/```/g, '').trim());
 
     // --- 3. SAVE TO DATABASE ---
-    // ** THE FIX **: Use the Service Role Key to bypass RLS for insertion
     const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     
     const { error: dbError } = await supabaseAdmin
@@ -79,12 +89,13 @@ export default async function handler(request) {
           user_id: user.id,
           topic: topic,
           content_json: lessonPlan,
-          language: language 
+          language: language
+          // Note: We are not saving 'age' column to DB yet to avoid breaking schema, 
+          // but the content itself is now adapted!
       }]);
 
     if (dbError) {
         console.error('Supabase DB Insert Error:', dbError);
-        // Provide a more specific error message back to the client
         throw new Error(`Supabase error: ${dbError.message}`);
     }
     
@@ -101,4 +112,3 @@ export default async function handler(request) {
     });
   }
 }
-
