@@ -6,6 +6,7 @@ let currentUserSession;
 let currentLessonData = null; // Global holder for the raw lesson data
 let currentTopic = '';
 let currentLanguage = 'English'; // Default language
+let currentAge = 'Nursery'; // Default Class Level
 
 // --- Main Page Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
@@ -30,6 +31,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentTopic = localStorage.getItem('currentTopic');
     // ** THE FIX **: Get the selected language from localStorage
     currentLanguage = localStorage.getItem('generationLanguage') || 'English';
+// Retrieve the selected Class Level
+    currentAge = localStorage.getItem('selectedAge') || 'Nursery';
 
     if (!currentTopic) {
         alert('No topic found. Redirecting to start a new lesson.');
@@ -39,11 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     setupTabInteractions();
     // Pass the language to the generation function
-    generateAndDisplayContent(currentTopic, currentLanguage, session.access_token);
+    generateAndDisplayContent(currentTopic, currentLanguage, currentAge, session.access_token);
 });
 
 // --- API Call and Content Display ---
-async function generateAndDisplayContent(topic, language, token) {
+async function generateAndDisplayContent(topic, language, age, token) {
     const loader = document.getElementById('loader');
     const mainContent = document.getElementById('main-content');
     
@@ -55,7 +58,7 @@ async function generateAndDisplayContent(topic, language, token) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             // ** THE FIX **: Send both topic and language to the API
-            body: JSON.stringify({ topic, language }),
+            body: JSON.stringify({ topic, language, age }),
         });
 
         if (!response.ok) {
