@@ -49,9 +49,10 @@ async function fetchAndDisplayLessons(userId) {
     grid.innerHTML = '';
     emptyState.style.display = 'none';
 
+    // We only need basic info for the cards now
     let { data: lessons, error } = await supabase
         .from('AIGeneratedContent')
-        .select('id, created_at, topic, language, age, content_json')
+        .select('id, created_at, topic, language, age')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -70,7 +71,7 @@ async function fetchAndDisplayLessons(userId) {
     } else {
         grid.style.display = 'grid';
         grid.innerHTML = lessons.map(lesson => createLessonCard(lesson)).join('');
-        attachCardListeners(lessons); 
+        attachCardListeners(); // No need to pass 'lessons' array anymore
     }
 }
 
@@ -117,7 +118,7 @@ function createLessonCard(lesson) {
     `;
 }
 
-function attachCardListeners(lessons) {
+function attachCardListeners() {
     document.querySelectorAll('.view-btn').forEach(button => {
         button.addEventListener('click', handleViewLesson);
     });
@@ -127,61 +128,77 @@ function attachCardListeners(lessons) {
     });
     
     document.querySelectorAll('.share-btn').forEach(button => {
-        button.addEventListener('click', (e) => openShareSelectionModal(e, lessons));
+        button.addEventListener('click', openShareSelectionModal);
     });
 }
 
-// --- NEW: SMART SHARE SELECTION ---
+// --- NEW ROBUST SHARE LOGIC ---
 
-function openShareSelectionModal(event, lessons) {
+async function openShareSelectionModal(event) {
     const card = event.currentTarget.closest('.lesson-card');
     const lessonId = card.dataset.lessonId;
-    const lessonData = lessons.find(l => l.id === lessonId);
-
-    if (!lessonData) return alert("Error finding lesson data.");
-
-    // 1. Open Modal
+    
+    // 1. Open Modal with Loader immediately
     const modal = document.getElementById('lesson-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalContent = document.getElementById('modal-content');
     
     modal.classList.remove('hidden');
     modalTitle.textContent = "Select Content to Share";
-    modalContent.innerHTML = ''; // Clear previous content
+    modalContent.innerHTML = '<div class="flex justify-center p-8"><div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500"></div></div>';
 
-    // 2. Generate Share Options
+    // 2. Fetch Fresh Data (This fixes the error!)
+    const { data: lessonData, error } = await supabase
+        .from('AIGeneratedContent')
+        .select('*')
+        .eq('id', lessonId)
+        .single();
+
+    if (error || !lessonData) {
+        modalContent.innerHTML = `<p class="text-red-400 text-center">Error loading lesson data: ${error?.message || 'Not found'}</p>`;
+        return;
+    }
+
+    // 3. Generate Share Options
     const options = generateShareableItems(lessonData);
 
-    // 3. Build UI for Options
+    // 4. Build UI
     const container = document.createElement('div');
     container.className = "space-y-3";
 
-    options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.className = "w-full text-left p-4 rounded-lg bg-gray-700/50 hover:bg-purple-900/30 border border-gray-600 hover:border-purple-500 transition-all flex items-center justify-between group";
-        
-        btn.innerHTML = `
-            <div class="flex items-center">
-                <span class="material-symbols-outlined ${opt.iconColor} mr-3">${opt.icon}</span>
-                <div>
-                    <h4 class="font-bold text-gray-200 group-hover:text-white">${opt.label}</h4>
-                    <p class="text-xs text-gray-400">${opt.preview}</p>
+    if (options.length === 0) {
+        container.innerHTML = `<p class="text-gray-400 text-center">No shareable content found in this lesson.</p>`;
+    } else {
+        options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = "w-full text-left p-4 rounded-lg bg-gray-700/50 hover:bg-purple-900/30 border border-gray-600 hover:border-purple-500 transition-all flex items-center justify-between group";
+            
+            btn.innerHTML = `
+                <div class="flex items-center">
+                    <span class="material-symbols-outlined ${opt.iconColor} mr-3">${opt.icon}</span>
+                    <div>
+                        <h4 class="font-bold text-gray-200 group-hover:text-white">${opt.label}</h4>
+                        <p class="text-xs text-gray-400 line-clamp-1">${opt.preview}</p>
+                    </div>
                 </div>
-            </div>
-            <span class="material-symbols-outlined text-gray-500 group-hover:text-purple-400">send</span>
-        `;
+                <span class="material-symbols-outlined text-gray-500 group-hover:text-purple-400">send</span>
+            `;
 
-        // Click Handler
-        btn.onclick = () => executeShare(opt, lessonData, btn);
-        container.appendChild(btn);
-    });
+            // Click Handler
+            btn.onclick = () => executeShare(opt, lessonData, btn);
+            container.appendChild(btn);
+        });
+    }
 
+    modalContent.innerHTML = '';
     modalContent.appendChild(container);
 }
 
 function generateShareableItems(lesson) {
     const items = [];
     const json = lesson.content_json;
+
+    if (!json) return items;
 
     // 1. Full Lesson Option
     items.push({
@@ -228,7 +245,7 @@ function generateShareableItems(lesson) {
                 content: text,
                 icon: "extension",
                 iconColor: "text-blue-400",
-                preview: text.substring(0, 50) + "..."
+                preview: typeof text === 'string' ? text.substring(0, 50) + "..." : "Activity Details"
             });
         });
     }
@@ -247,7 +264,7 @@ async function executeShare(item, lessonData, buttonElement) {
         user_id: session.user.id,
         user_name: session.user.user_metadata?.full_name || session.user.email,
         topic: lessonData.topic,
-        category: item.category, // e.g., "Rhyme", "Full Plan"
+        category: item.category,
         content: item.content,
         age: lessonData.age || 'General'
     }]);
@@ -261,7 +278,6 @@ async function executeShare(item, lessonData, buttonElement) {
         buttonElement.classList.remove('bg-gray-700/50');
         buttonElement.classList.add('bg-green-900/30', 'border-green-500');
         
-        // Close modal after 1.5 seconds
         setTimeout(() => {
             document.getElementById('lesson-modal').classList.add('hidden');
         }, 1500);
