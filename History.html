@@ -78,44 +78,54 @@
 </header>
 <main class="relative px-4 sm:px-6 lg:px-8 py-8 flex-grow">
 <div class="max-w-7xl mx-auto">
-<div class="flex flex-wrap justify-between items-center mb-8 gap-4">
-<div>
-<h2 class="text-3xl font-bold tracking-tight text-white">Your Woven Lessons</h2>
-<p class="text-gray-400 mt-1">Review, share, or delete your previously generated lesson plans.</p>
-</div>
-<a href="/new-chat.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300 flex items-center">
-<span class="material-symbols-outlined mr-2">add</span> Weave a New Lesson
-                    </a>
-</div>
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
+        
+        <div class="flex-shrink-0">
+            <h2 class="text-3xl font-bold tracking-tight text-white">Your Woven Lessons</h2>
+            <p class="text-gray-400 mt-1">Review, share, or delete your previously generated lesson plans.</p>
+        </div>
 
-<!-- Search and Filter -->
-<div class="mb-6">
-    <div class="relative">
-        <input class="w-full pl-10 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" id="search-input" placeholder="Search your lessons by topic..." type="search"/>
-        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-            <span class="material-symbols-outlined text-gray-400">search</span>
-        </span>
-    </div>
-</div>
+        <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            
+            <div class="relative min-w-[160px]">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span class="material-symbols-outlined text-gray-400">filter_alt</span>
+                </div>
+                <select id="age-filter" class="w-full pl-10 pr-10 py-2.5 bg-gray-800/80 border border-gray-600 rounded-lg text-white appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer hover:bg-gray-700 transition-colors">
+                    <option value="all">All Ages</option>
+                    <option value="Nursery">Nursery</option>
+                    <option value="Juniors">Juniors</option>
+                    <option value="Seniors">Seniors</option>
+                </select>
+                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <span class="material-symbols-outlined text-gray-400 text-sm">expand_more</span>
+                </div>
+            </div>
 
-<!-- History Grid -->
-<div id="history-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    <!-- Loading State -->
-    <div id="loader" class="col-span-full flex flex-col items-center justify-center h-64">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
-        <p class="mt-4 text-lg">Weaving your history...</p>
+            <div class="relative w-full sm:w-72">
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <span class="material-symbols-outlined text-gray-400">search</span>
+                </div>
+                <input id="search-input" class="w-full pl-10 pr-4 py-2.5 bg-gray-800/80 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Search your lessons..." type="search" />
+            </div>
+
+            <a href="/new-chat.html" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-5 rounded-lg transition duration-300 flex items-center justify-center whitespace-nowrap shadow-lg shadow-purple-900/20">
+                <span class="material-symbols-outlined mr-2">add</span> Weave New
+            </a>
+        </div>
     </div>
-    <!-- Empty State -->
-    <div id="empty-state" class="col-span-full flex-col items-center justify-center h-64 hidden">
-        <span class="material-symbols-outlined text-7xl text-gray-500">history_edu</span>
-        <h3 class="text-2xl font-bold mt-4">No Lessons Yet</h3>
-        <p class="text-gray-400 mt-2">Start a new chat to weave your first lesson plan.</p>
-        <a href="/new-chat.html" class="mt-6 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md transition duration-300">
-            Create a New Lesson
-        </a>
+
+    <div id="history-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div id="loader" class="col-span-full flex flex-col items-center justify-center h-64">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
+            <p class="mt-4 text-lg">Weaving your history...</p>
+        </div>
+        <div id="empty-state" class="col-span-full hidden flex-col items-center justify-center h-64">
+            <span class="material-symbols-outlined text-7xl text-gray-500">history_edu</span>
+            <h3 class="text-2xl font-bold mt-4">No Lessons Found</h3>
+            <p class="text-gray-400 mt-2">Try adjusting your filters or search term.</p>
+        </div>
     </div>
-    <!-- Lesson cards will be dynamically inserted here -->
-</div>
 </div>
 </main>
 <footer class="relative w-full text-right py-4 px-4 sm:px-6 lg:px-8">
