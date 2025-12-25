@@ -131,7 +131,7 @@ function attachCardListeners() {
     });
 }
 
-// --- NEW PROFESSIONAL SHARE MODAL ---
+// --- COMPACT SHARE MODAL ---
 
 async function openShareSelectionModal(event) {
     const card = event.currentTarget.closest('.lesson-card');
@@ -153,51 +153,51 @@ async function openShareSelectionModal(event) {
         .single();
 
     if (error || !lessonData) {
-        modalContent.innerHTML = `<p class="text-red-400 text-center">Error loading lesson data: ${error?.message || 'Not found'}</p>`;
+        modalContent.innerHTML = `<p class="text-red-400 text-center text-sm">Error loading data.</p>`;
         return;
     }
 
-    // 2. Generate All Options
+    // 2. Generate Options
     const options = generateShareableItems(lessonData);
 
     if (options.length === 0) {
-        modalContent.innerHTML = `<p class="text-gray-400 text-center">No shareable content found.</p>`;
+        modalContent.innerHTML = `<p class="text-gray-400 text-center text-sm">No content found.</p>`;
         return;
     }
 
-    // 3. Build UI
+    // 3. Build Compact UI
     let html = `
         <div class="flex flex-col h-full">
-            <p class="text-sm text-gray-400 mb-4 px-1">Select the threads to share. Items are grouped by category.</p>
+            <p class="text-xs text-gray-400 mb-2 px-1">Select threads to share:</p>
             
-            <div class="flex-grow overflow-y-auto pr-2 space-y-4 max-h-[60vh] custom-scrollbar">
+            <div class="flex-grow overflow-y-auto pr-1 space-y-2 max-h-[55vh] custom-scrollbar">
     `;
 
     let currentGroup = '';
 
     options.forEach((opt, index) => {
-        // Group Header Logic
         if (opt.group !== currentGroup) {
             currentGroup = opt.group;
+            // Compact Header
             html += `
-                <div class="sticky top-0 bg-gray-800/95 backdrop-blur z-10 py-1 px-1 border-b border-gray-700 mb-2">
-                    <h5 class="text-xs font-bold text-purple-400 uppercase tracking-wider">${currentGroup}</h5>
+                <div class="sticky top-0 bg-gray-800/95 backdrop-blur z-10 py-1 px-1 border-b border-gray-700 mb-1 mt-2 first:mt-0">
+                    <h5 class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">${currentGroup}</h5>
                 </div>
             `;
         }
 
-        // Compact Card Item
+        // Compact Row
         html += `
-            <label class="flex items-start p-2.5 rounded-md bg-gray-700/30 border border-gray-700/50 hover:bg-gray-700/60 hover:border-purple-500/50 cursor-pointer transition-all group">
-                <div class="flex items-center h-full pt-0.5">
-                    <input type="checkbox" class="share-checkbox form-checkbox h-4 w-4 text-purple-600 rounded border-gray-500 bg-gray-800 focus:ring-purple-500" value="${index}">
+            <label class="flex items-center p-1.5 rounded-md bg-gray-700/20 border border-gray-700/50 hover:bg-gray-700/50 hover:border-purple-500/30 cursor-pointer transition-all group">
+                <div class="flex items-center h-full">
+                    <input type="checkbox" class="share-checkbox form-checkbox h-3.5 w-3.5 text-purple-600 rounded border-gray-500 bg-gray-800 focus:ring-purple-500 focus:ring-1" value="${index}">
                 </div>
-                <div class="ml-3 flex-1 min-w-0">
-                    <div class="flex items-center gap-2 mb-0.5">
-                        <span class="material-symbols-outlined text-[16px] ${opt.iconColor}">${opt.icon}</span>
-                        <h4 class="text-sm font-medium text-gray-200 group-hover:text-white truncate">${opt.label}</h4>
+                <div class="ml-2.5 flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-sm ${opt.iconColor}">${opt.icon}</span>
+                        <h4 class="text-xs font-medium text-gray-200 group-hover:text-white truncate">${opt.label}</h4>
                     </div>
-                    <p class="text-xs text-gray-500 line-clamp-2">${opt.preview}</p>
+                    <p class="text-[10px] text-gray-500 line-clamp-1 leading-tight">${opt.preview}</p>
                 </div>
             </label>
         `;
@@ -205,10 +205,10 @@ async function openShareSelectionModal(event) {
 
     html += `
             </div>
-            <div class="pt-4 mt-2 border-t border-gray-700 flex justify-between items-center bg-gray-800 z-20">
-                <button id="select-all-btn" class="text-xs text-purple-400 hover:text-purple-300 font-medium px-2">Select All</button>
-                <button id="confirm-share-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md text-sm transition-all flex items-center shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span class="material-symbols-outlined mr-2 text-sm">groups</span> Share Selected
+            <div class="pt-3 mt-2 border-t border-gray-700 flex justify-between items-center bg-gray-800 z-20">
+                <button id="select-all-btn" class="text-[10px] text-purple-400 hover:text-purple-300 font-medium px-2 uppercase tracking-wide">Select All</button>
+                <button id="confirm-share-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-4 rounded text-xs transition-all flex items-center shadow-md disabled:opacity-50">
+                    <span class="material-symbols-outlined mr-1.5 text-sm">groups</span> Share
                 </button>
             </div>
         </div>
@@ -233,7 +233,7 @@ async function openShareSelectionModal(event) {
             .map(cb => parseInt(cb.value));
 
         if (selectedIndices.length === 0) {
-            alert("Please select at least one item to share.");
+            alert("Select at least one item.");
             return;
         }
 
@@ -259,7 +259,7 @@ function generateShareableItems(lesson) {
             content: text,
             icon,
             iconColor: color,
-            preview: text.substring(0, 60) + "..."
+            preview: text.substring(0, 50)
         });
     };
 
@@ -328,7 +328,7 @@ function generateShareableItems(lesson) {
 // Upload Batch
 async function executeBatchShare(items, lessonData, buttonElement) {
     const originalContent = buttonElement.innerHTML;
-    buttonElement.innerHTML = `<span class="animate-spin material-symbols-outlined mr-2">progress_activity</span> Sharing...`;
+    buttonElement.innerHTML = `<span class="animate-spin material-symbols-outlined mr-2 text-sm">progress_activity</span> Sharing...`;
     buttonElement.disabled = true;
 
     const { data: { session } } = await supabase.auth.getSession();
@@ -339,7 +339,7 @@ async function executeBatchShare(items, lessonData, buttonElement) {
             user_id: user.id,
             user_name: user.user_metadata?.full_name || user.email,
             topic: lessonData.topic,
-            category: item.category, // e.g. "Rhyme", "Activity"
+            category: item.category, 
             content: item.content,
             age: lessonData.age || 'General'
         }]);
@@ -353,7 +353,7 @@ async function executeBatchShare(items, lessonData, buttonElement) {
         buttonElement.innerHTML = originalContent;
         buttonElement.disabled = false;
     } else {
-        buttonElement.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Shared!`;
+        buttonElement.innerHTML = `<span class="material-symbols-outlined mr-2 text-sm">check_circle</span> Shared!`;
         buttonElement.classList.replace('bg-purple-600', 'bg-green-600');
         buttonElement.classList.replace('hover:bg-purple-700', 'hover:bg-green-700');
         
