@@ -89,7 +89,8 @@ export default async function handler(request) {
           user_id: user.id,
           topic: topic,
           content_json: lessonPlan,
-          language: language
+          language: language,
+	  age: age
           // Note: We are not saving 'age' column to DB yet to avoid breaking schema, 
           // but the content itself is now adapted!
       }]);

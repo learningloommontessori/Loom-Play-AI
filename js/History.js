@@ -53,7 +53,7 @@ async function fetchAndDisplayLessons(userId) {
     console.log("Querying 'AIGeneratedContent' table from Supabase...");
     let { data: lessons, error } = await supabase
         .from('AIGeneratedContent')
-        .select('id, created_at, topic, language, content_json')
+        .select('id, created_at, topic, language, age, content_json')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -86,18 +86,28 @@ function createLessonCard(lesson) {
     });
     
     const language = lesson.language || 'English'; 
+    const ageGroup = lesson.age || 'General'; // Default if missing
 
     return `
         <div class="lesson-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden group flex flex-col justify-between hover:border-purple-500 border border-transparent transition-all duration-300" data-lesson-id="${lesson.id}" data-topic="${lesson.topic}">
             <div class="p-6 flex-grow">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-xl font-semibold text-white">${lesson.topic}</h3>
-                    <span class="text-xs font-medium bg-purple-800/60 text-purple-200 px-2 py-1 rounded-full">${language}</span>
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-xl font-semibold text-white leading-tight">${lesson.topic}</h3>
                 </div>
+                
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <span class="text-xs font-medium bg-purple-900/60 text-purple-200 px-2 py-1 rounded-full border border-purple-700/50">
+                        <span class="material-symbols-outlined text-[10px] align-middle mr-1">translate</span>${language}
+                    </span>
+                    <span class="text-xs font-medium bg-blue-900/60 text-blue-200 px-2 py-1 rounded-full border border-blue-700/50">
+                        <span class="material-symbols-outlined text-[10px] align-middle mr-1">school</span>${ageGroup}
+                    </span>
+                </div>
+
                 <p class="text-gray-400 text-sm mb-4 line-clamp-2">Review the generated content for this Montessori lesson.</p>
             </div>
-            <div class="px-6 pb-4 pt-2">
-                <p class="text-gray-400 text-sm">${formattedDate}</p>
+            <div class="px-6 pb-4 pt-2 border-t border-gray-800/50">
+                <p class="text-gray-500 text-xs">${formattedDate}</p>
             </div>
             <div class="p-4 bg-black/20 flex justify-end items-center space-x-3">
                 <button class="view-btn text-gray-300 hover:text-white transition-colors" title="View Lesson">
@@ -113,7 +123,6 @@ function createLessonCard(lesson) {
         </div>
     `;
 }
-
 function attachCardListeners() {
     document.querySelectorAll('.view-btn').forEach(button => {
         button.addEventListener('click', handleViewLesson);
