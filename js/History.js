@@ -49,7 +49,6 @@ async function fetchAndDisplayLessons(userId) {
     grid.innerHTML = '';
     emptyState.style.display = 'none';
 
-    // We only need basic info for the cards now
     let { data: lessons, error } = await supabase
         .from('AIGeneratedContent')
         .select('id, created_at, topic, language, age')
@@ -71,7 +70,7 @@ async function fetchAndDisplayLessons(userId) {
     } else {
         grid.style.display = 'grid';
         grid.innerHTML = lessons.map(lesson => createLessonCard(lesson)).join('');
-        attachCardListeners(); // No need to pass 'lessons' array anymore
+        attachCardListeners();
     }
 }
 
@@ -106,8 +105,8 @@ function createLessonCard(lesson) {
                     <button class="view-btn p-2 text-gray-400 hover:text-white transition-colors" title="View Lesson">
                         <span class="material-symbols-outlined">visibility</span>
                     </button>
-                    <button class="share-btn p-2 text-gray-400 hover:text-purple-400 transition-colors" title="Share to Community">
-                        <span class="material-symbols-outlined">ios_share</span>
+                    <button class="share-btn p-2 text-gray-400 hover:text-purple-400 transition-colors" title="Share to Collective Loom">
+                        <span class="material-symbols-outlined">groups</span>
                     </button>
                     <button class="delete-btn p-2 text-gray-400 hover:text-red-500 transition-colors" title="Delete Lesson">
                         <span class="material-symbols-outlined">delete</span>
@@ -132,22 +131,21 @@ function attachCardListeners() {
     });
 }
 
-// --- NEW ROBUST SHARE LOGIC ---
+// --- NEW CHECKBOX SHARE LOGIC ---
 
 async function openShareSelectionModal(event) {
     const card = event.currentTarget.closest('.lesson-card');
     const lessonId = card.dataset.lessonId;
     
-    // 1. Open Modal with Loader immediately
     const modal = document.getElementById('lesson-modal');
     const modalTitle = document.getElementById('modal-title');
     const modalContent = document.getElementById('modal-content');
     
     modal.classList.remove('hidden');
-    modalTitle.textContent = "Select Content to Share";
+    modalTitle.textContent = "Weave into the Collective Loom";
     modalContent.innerHTML = '<div class="flex justify-center p-8"><div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-500"></div></div>';
 
-    // 2. Fetch Fresh Data (This fixes the error!)
+    // 1. Fetch Fresh Data
     const { data: lessonData, error } = await supabase
         .from('AIGeneratedContent')
         .select('*')
@@ -159,58 +157,97 @@ async function openShareSelectionModal(event) {
         return;
     }
 
-    // 3. Generate Share Options
+    // 2. Generate Options
     const options = generateShareableItems(lessonData);
 
-    // 4. Build UI
-    const container = document.createElement('div');
-    container.className = "space-y-3";
-
+    // 3. Build UI
     if (options.length === 0) {
-        container.innerHTML = `<p class="text-gray-400 text-center">No shareable content found in this lesson.</p>`;
-    } else {
-        options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = "w-full text-left p-4 rounded-lg bg-gray-700/50 hover:bg-purple-900/30 border border-gray-600 hover:border-purple-500 transition-all flex items-center justify-between group";
-            
-            btn.innerHTML = `
-                <div class="flex items-center">
-                    <span class="material-symbols-outlined ${opt.iconColor} mr-3">${opt.icon}</span>
-                    <div>
-                        <h4 class="font-bold text-gray-200 group-hover:text-white">${opt.label}</h4>
-                        <p class="text-xs text-gray-400 line-clamp-1">${opt.preview}</p>
-                    </div>
-                </div>
-                <span class="material-symbols-outlined text-gray-500 group-hover:text-purple-400">send</span>
-            `;
-
-            // Click Handler
-            btn.onclick = () => executeShare(opt, lessonData, btn);
-            container.appendChild(btn);
-        });
+        modalContent.innerHTML = `<p class="text-gray-400 text-center">No shareable content found in this lesson.</p>`;
+        return;
     }
 
-    modalContent.innerHTML = '';
-    modalContent.appendChild(container);
+    let html = `
+        <div class="space-y-4">
+            <p class="text-sm text-gray-400 mb-4">Select the threads you wish to share with other teachers:</p>
+            <div class="max-h-[50vh] overflow-y-auto space-y-2 pr-2" id="share-options-container">
+    `;
+
+    options.forEach((opt, index) => {
+        html += `
+            <label class="flex items-center justify-between p-3 rounded-lg bg-gray-700/40 hover:bg-gray-700/80 border border-gray-600/50 cursor-pointer transition-colors group">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <input type="checkbox" class="share-checkbox form-checkbox h-5 w-5 text-purple-600 rounded border-gray-500 bg-gray-800 focus:ring-purple-500 focus:ring-offset-gray-900" 
+                        value="${index}">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center border border-gray-600">
+                        <span class="material-symbols-outlined text-sm ${opt.iconColor}">${opt.icon}</span>
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white truncate">${opt.label}</h4>
+                        <p class="text-xs text-gray-500 truncate">${opt.preview}</p>
+                    </div>
+                </div>
+            </label>
+        `;
+    });
+
+    html += `
+            </div>
+            <div class="pt-4 border-t border-gray-700 flex justify-between items-center mt-4">
+                <button id="select-all-btn" class="text-xs text-purple-400 hover:text-purple-300 font-medium">Select All</button>
+                <button id="confirm-share-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined mr-2 text-lg">groups</span> Share Selected
+                </button>
+            </div>
+        </div>
+    `;
+
+    modalContent.innerHTML = html;
+
+    // 4. Attach Listeners
+    const checkboxes = modalContent.querySelectorAll('.share-checkbox');
+    const confirmBtn = document.getElementById('confirm-share-btn');
+    const selectAllBtn = document.getElementById('select-all-btn');
+
+    // Select All Logic
+    selectAllBtn.onclick = () => {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        selectAllBtn.textContent = allChecked ? "Select All" : "Deselect All";
+    };
+
+    // Submit Logic
+    confirmBtn.onclick = async () => {
+        const selectedIndices = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => parseInt(cb.value));
+
+        if (selectedIndices.length === 0) {
+            alert("Please select at least one item to share.");
+            return;
+        }
+
+        const selectedItems = selectedIndices.map(i => options[i]);
+        await executeBatchShare(selectedItems, lessonData, confirmBtn);
+    };
 }
 
+// Generate the list of potential items to share
 function generateShareableItems(lesson) {
     const items = [];
     const json = lesson.content_json;
-
     if (!json) return items;
 
-    // 1. Full Lesson Option
+    // 1. Full Lesson
     items.push({
         label: "Full Lesson Plan",
         category: "Full Plan",
         content: buildLessonHtml(json),
         icon: "description",
         iconColor: "text-white",
-        preview: "Share the entire generated document."
+        preview: "Share the entire document"
     });
 
-    // 2. Extract Rhymes & Stories
+    // 2. Rhymes & Stories
     if (json.newlyCreatedContent) {
         if (json.newlyCreatedContent.originalRhyme) {
             items.push({
@@ -219,7 +256,7 @@ function generateShareableItems(lesson) {
                 content: json.newlyCreatedContent.originalRhyme,
                 icon: "music_note",
                 iconColor: "text-pink-400",
-                preview: "Just the rhyme/song lyrics."
+                preview: "Song/Rhyme Lyrics"
             });
         }
         if (json.newlyCreatedContent.originalMiniStory) {
@@ -229,12 +266,12 @@ function generateShareableItems(lesson) {
                 content: json.newlyCreatedContent.originalMiniStory,
                 icon: "auto_stories",
                 iconColor: "text-yellow-400",
-                preview: "Just the short story text."
+                preview: "Short Story Text"
             });
         }
     }
 
-    // 3. Extract Activities
+    // 3. Activities
     if (json.newActivities) {
         Object.entries(json.newActivities).forEach(([key, val]) => {
             const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
@@ -245,7 +282,7 @@ function generateShareableItems(lesson) {
                 content: text,
                 icon: "extension",
                 iconColor: "text-blue-400",
-                preview: typeof text === 'string' ? text.substring(0, 50) + "..." : "Activity Details"
+                preview: typeof text === 'string' ? text.substring(0, 40) + "..." : "Activity Details"
             });
         });
     }
@@ -253,36 +290,46 @@ function generateShareableItems(lesson) {
     return items;
 }
 
-async function executeShare(item, lessonData, buttonElement) {
+// Upload multiple items to Supabase
+async function executeBatchShare(items, lessonData, buttonElement) {
     const originalContent = buttonElement.innerHTML;
-    buttonElement.innerHTML = `<div class="flex items-center justify-center w-full"><div class="animate-spin h-5 w-5 border-2 border-white rounded-full border-t-transparent"></div></div>`;
+    buttonElement.innerHTML = `<span class="animate-spin material-symbols-outlined mr-2">progress_activity</span> Sharing...`;
     buttonElement.disabled = true;
 
     const { data: { session } } = await supabase.auth.getSession();
+    const user = session.user;
 
-    const { error } = await supabase.from('CommunityHub').insert([{
-        user_id: session.user.id,
-        user_name: session.user.user_metadata?.full_name || session.user.email,
-        topic: lessonData.topic,
-        category: item.category,
-        content: item.content,
-        age: lessonData.age || 'General'
-    }]);
+    // Create an array of insert promises
+    const promises = items.map(item => {
+        return supabase.from('CommunityHub').insert([{
+            user_id: user.id,
+            user_name: user.user_metadata?.full_name || user.email,
+            topic: lessonData.topic,
+            category: item.category,
+            content: item.content,
+            age: lessonData.age || 'General'
+        }]);
+    });
 
-    if (error) {
-        alert('Share failed: ' + error.message);
+    // Run all inserts in parallel
+    const results = await Promise.all(promises);
+    const errors = results.filter(r => r.error);
+
+    if (errors.length > 0) {
+        alert(`Shared ${items.length - errors.length} items. Failed to share ${errors.length} items.`);
         buttonElement.innerHTML = originalContent;
         buttonElement.disabled = false;
     } else {
-        buttonElement.innerHTML = `<div class="flex items-center text-green-400"><span class="material-symbols-outlined mr-2">check_circle</span> Shared to Hub!</div>`;
-        buttonElement.classList.remove('bg-gray-700/50');
-        buttonElement.classList.add('bg-green-900/30', 'border-green-500');
+        buttonElement.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Shared Successfully!`;
+        buttonElement.classList.replace('bg-purple-600', 'bg-green-600');
+        buttonElement.classList.replace('hover:bg-purple-700', 'hover:bg-green-700');
         
         setTimeout(() => {
             document.getElementById('lesson-modal').classList.add('hidden');
         }, 1500);
     }
 }
+
 
 // --- VIEW & DELETE LOGIC (Unchanged) ---
 
