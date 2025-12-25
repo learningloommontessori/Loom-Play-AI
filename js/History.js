@@ -131,7 +131,7 @@ function attachCardListeners() {
     });
 }
 
-// --- NEW CHECKBOX SHARE LOGIC ---
+// --- NEW PROFESSIONAL SHARE MODAL ---
 
 async function openShareSelectionModal(event) {
     const card = event.currentTarget.closest('.lesson-card');
@@ -157,34 +157,47 @@ async function openShareSelectionModal(event) {
         return;
     }
 
-    // 2. Generate Options
+    // 2. Generate All Options
     const options = generateShareableItems(lessonData);
 
-    // 3. Build UI
     if (options.length === 0) {
-        modalContent.innerHTML = `<p class="text-gray-400 text-center">No shareable content found in this lesson.</p>`;
+        modalContent.innerHTML = `<p class="text-gray-400 text-center">No shareable content found.</p>`;
         return;
     }
 
+    // 3. Build UI
     let html = `
-        <div class="space-y-4">
-            <p class="text-sm text-gray-400 mb-4">Select the threads you wish to share with other teachers:</p>
-            <div class="max-h-[50vh] overflow-y-auto space-y-2 pr-2" id="share-options-container">
+        <div class="flex flex-col h-full">
+            <p class="text-sm text-gray-400 mb-4 px-1">Select the threads to share. Items are grouped by category.</p>
+            
+            <div class="flex-grow overflow-y-auto pr-2 space-y-4 max-h-[60vh] custom-scrollbar">
     `;
 
+    let currentGroup = '';
+
     options.forEach((opt, index) => {
+        // Group Header Logic
+        if (opt.group !== currentGroup) {
+            currentGroup = opt.group;
+            html += `
+                <div class="sticky top-0 bg-gray-800/95 backdrop-blur z-10 py-1 px-1 border-b border-gray-700 mb-2">
+                    <h5 class="text-xs font-bold text-purple-400 uppercase tracking-wider">${currentGroup}</h5>
+                </div>
+            `;
+        }
+
+        // Compact Card Item
         html += `
-            <label class="flex items-center justify-between p-3 rounded-lg bg-gray-700/40 hover:bg-gray-700/80 border border-gray-600/50 cursor-pointer transition-colors group">
-                <div class="flex items-center gap-3 overflow-hidden">
-                    <input type="checkbox" class="share-checkbox form-checkbox h-5 w-5 text-purple-600 rounded border-gray-500 bg-gray-800 focus:ring-purple-500 focus:ring-offset-gray-900" 
-                        value="${index}">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center border border-gray-600">
-                        <span class="material-symbols-outlined text-sm ${opt.iconColor}">${opt.icon}</span>
+            <label class="flex items-start p-2.5 rounded-md bg-gray-700/30 border border-gray-700/50 hover:bg-gray-700/60 hover:border-purple-500/50 cursor-pointer transition-all group">
+                <div class="flex items-center h-full pt-0.5">
+                    <input type="checkbox" class="share-checkbox form-checkbox h-4 w-4 text-purple-600 rounded border-gray-500 bg-gray-800 focus:ring-purple-500" value="${index}">
+                </div>
+                <div class="ml-3 flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-0.5">
+                        <span class="material-symbols-outlined text-[16px] ${opt.iconColor}">${opt.icon}</span>
+                        <h4 class="text-sm font-medium text-gray-200 group-hover:text-white truncate">${opt.label}</h4>
                     </div>
-                    <div class="min-w-0">
-                        <h4 class="text-sm font-semibold text-gray-200 group-hover:text-white truncate">${opt.label}</h4>
-                        <p class="text-xs text-gray-500 truncate">${opt.preview}</p>
-                    </div>
+                    <p class="text-xs text-gray-500 line-clamp-2">${opt.preview}</p>
                 </div>
             </label>
         `;
@@ -192,10 +205,10 @@ async function openShareSelectionModal(event) {
 
     html += `
             </div>
-            <div class="pt-4 border-t border-gray-700 flex justify-between items-center mt-4">
-                <button id="select-all-btn" class="text-xs text-purple-400 hover:text-purple-300 font-medium">Select All</button>
-                <button id="confirm-share-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-all flex items-center shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span class="material-symbols-outlined mr-2 text-lg">groups</span> Share Selected
+            <div class="pt-4 mt-2 border-t border-gray-700 flex justify-between items-center bg-gray-800 z-20">
+                <button id="select-all-btn" class="text-xs text-purple-400 hover:text-purple-300 font-medium px-2">Select All</button>
+                <button id="confirm-share-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-md text-sm transition-all flex items-center shadow-lg shadow-purple-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span class="material-symbols-outlined mr-2 text-sm">groups</span> Share Selected
                 </button>
             </div>
         </div>
@@ -208,14 +221,12 @@ async function openShareSelectionModal(event) {
     const confirmBtn = document.getElementById('confirm-share-btn');
     const selectAllBtn = document.getElementById('select-all-btn');
 
-    // Select All Logic
     selectAllBtn.onclick = () => {
         const allChecked = Array.from(checkboxes).every(cb => cb.checked);
         checkboxes.forEach(cb => cb.checked = !allChecked);
         selectAllBtn.textContent = allChecked ? "Select All" : "Deselect All";
     };
 
-    // Submit Logic
     confirmBtn.onclick = async () => {
         const selectedIndices = Array.from(checkboxes)
             .filter(cb => cb.checked)
@@ -231,66 +242,90 @@ async function openShareSelectionModal(event) {
     };
 }
 
-// Generate the list of potential items to share
+// Generate the Comprehensive List of Items
 function generateShareableItems(lesson) {
     const items = [];
     const json = lesson.content_json;
     if (!json) return items;
 
-    // 1. Full Lesson
+    // Helper to add item
+    const addItem = (group, label, category, content, icon, color) => {
+        const text = Array.isArray(content) ? content.join(" ") : content;
+        if (!text) return;
+        items.push({
+            group,
+            label,
+            category,
+            content: text,
+            icon,
+            iconColor: color,
+            preview: text.substring(0, 60) + "..."
+        });
+    };
+
+    // 1. Full Plan
     items.push({
+        group: "Overview",
         label: "Full Lesson Plan",
         category: "Full Plan",
         content: buildLessonHtml(json),
         icon: "description",
         iconColor: "text-white",
-        preview: "Share the entire document"
+        preview: "Share the entire generated document."
     });
 
-    // 2. Rhymes & Stories
+    // 2. Creative (Rhymes & Stories)
     if (json.newlyCreatedContent) {
-        if (json.newlyCreatedContent.originalRhyme) {
-            items.push({
-                label: "Original Rhyme",
-                category: "Rhyme",
-                content: json.newlyCreatedContent.originalRhyme,
-                icon: "music_note",
-                iconColor: "text-pink-400",
-                preview: "Song/Rhyme Lyrics"
-            });
-        }
-        if (json.newlyCreatedContent.originalMiniStory) {
-            items.push({
-                label: "Mini Story",
-                category: "Story",
-                content: json.newlyCreatedContent.originalMiniStory,
-                icon: "auto_stories",
-                iconColor: "text-yellow-400",
-                preview: "Short Story Text"
-            });
-        }
+        if (json.newlyCreatedContent.originalRhyme) 
+            addItem("Creative Arts", "Original Rhyme", "Rhyme", json.newlyCreatedContent.originalRhyme, "music_note", "text-pink-400");
+        if (json.newlyCreatedContent.originalMiniStory) 
+            addItem("Creative Arts", "Mini Story", "Story", json.newlyCreatedContent.originalMiniStory, "auto_stories", "text-yellow-400");
     }
 
-    // 3. Activities
+    // 3. New Activities
     if (json.newActivities) {
         Object.entries(json.newActivities).forEach(([key, val]) => {
             const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            const text = Array.isArray(val) ? val.join(" ") : val;
-            items.push({
-                label: title,
-                category: "Activity",
-                content: text,
-                icon: "extension",
-                iconColor: "text-blue-400",
-                preview: typeof text === 'string' ? text.substring(0, 40) + "..." : "Activity Details"
-            });
+            addItem("Classroom Activities", title, "Activity", val, "extension", "text-blue-400");
+        });
+    }
+
+    // 4. Movement & Music
+    if (json.movementAndMusic) {
+        Object.entries(json.movementAndMusic).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addItem("Movement & Music", title, "Movement", val, "directions_run", "text-green-400");
+        });
+    }
+
+    // 5. Social & Emotional
+    if (json.socialAndEmotionalLearning) {
+        Object.entries(json.socialAndEmotionalLearning).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addItem("Social & Emotional", title, "SEL", val, "diversity_3", "text-orange-400");
+        });
+    }
+
+    // 6. Montessori Connections
+    if (json.montessoriConnections) {
+        Object.entries(json.montessoriConnections).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addItem("Montessori Method", title, "Methodology", val, "school", "text-indigo-400");
+        });
+    }
+
+    // 7. Teacher Resources
+    if (json.teacherResources) {
+        Object.entries(json.teacherResources).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addItem("Teacher Guide", title, "Resource", val, "menu_book", "text-teal-400");
         });
     }
 
     return items;
 }
 
-// Upload multiple items to Supabase
+// Upload Batch
 async function executeBatchShare(items, lessonData, buttonElement) {
     const originalContent = buttonElement.innerHTML;
     buttonElement.innerHTML = `<span class="animate-spin material-symbols-outlined mr-2">progress_activity</span> Sharing...`;
@@ -299,19 +334,17 @@ async function executeBatchShare(items, lessonData, buttonElement) {
     const { data: { session } } = await supabase.auth.getSession();
     const user = session.user;
 
-    // Create an array of insert promises
     const promises = items.map(item => {
         return supabase.from('CommunityHub').insert([{
             user_id: user.id,
             user_name: user.user_metadata?.full_name || user.email,
             topic: lessonData.topic,
-            category: item.category,
+            category: item.category, // e.g. "Rhyme", "Activity"
             content: item.content,
             age: lessonData.age || 'General'
         }]);
     });
 
-    // Run all inserts in parallel
     const results = await Promise.all(promises);
     const errors = results.filter(r => r.error);
 
@@ -320,7 +353,7 @@ async function executeBatchShare(items, lessonData, buttonElement) {
         buttonElement.innerHTML = originalContent;
         buttonElement.disabled = false;
     } else {
-        buttonElement.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Shared Successfully!`;
+        buttonElement.innerHTML = `<span class="material-symbols-outlined mr-2">check_circle</span> Shared!`;
         buttonElement.classList.replace('bg-purple-600', 'bg-green-600');
         buttonElement.classList.replace('hover:bg-purple-700', 'hover:bg-green-700');
         
