@@ -34,10 +34,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     fetchAndDisplayPosts();
 
     // 3. Setup real-time search functionality
+    // 3. Setup Filter & Search
     const searchInput = document.getElementById('search-input');
-    if(searchInput) {
-        searchInput.addEventListener('input', (e) => filterPosts(e.target.value));
-    }
+    const ageFilter = document.getElementById('age-filter');
+
+    // Helper function to get values from BOTH inputs
+    const runFilters = () => {
+        const searchText = searchInput ? searchInput.value : '';
+        const ageValue = ageFilter ? ageFilter.value : 'all';
+        filterPosts(searchText, ageValue);
+    };
+
+    if(searchInput) searchInput.addEventListener('input', runFilters);
+    if(ageFilter) ageFilter.addEventListener('change', runFilters);
     
     // Setup listeners for the new modal
     setupModalListeners();
@@ -81,11 +90,12 @@ async function fetchAndDisplayPosts() {
 
 function createPostCard(post) {
     const formattedDate = new Date(post.created_at).toLocaleString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
+        month: 'short', day: 'numeric', year: 'numeric'
     });
     
+    // Default to 'General' if the post is old and has no age data
+    const ageGroup = post.age || 'General';
+
     let actionButtons = `
         <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
             View More <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
@@ -94,29 +104,35 @@ function createPostCard(post) {
 
     if (post.user_id === currentUserId) {
         actionButtons = `
-            <button class="delete-btn text-gray-400 hover:text-red-500 transition-colors" title="Delete Post" data-post-id="${post.post_id}">
-                <span class="material-symbols-outlined">delete</span>
+            <button class="delete-btn text-gray-400 hover:text-red-500 transition-colors mr-3" title="Delete Post" data-post-id="${post.post_id}">
+                <span class="material-symbols-outlined text-lg">delete</span>
             </button>
         ` + actionButtons;
     }
     
     return `
-        <div class="community-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden flex flex-col justify-between p-6 hover:border-purple-500 border border-transparent transition-all duration-300">
+        <div class="community-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden flex flex-col justify-between p-6 hover:border-purple-500 border border-transparent transition-all duration-300" data-age="${ageGroup}">
             <div>
-                <div class="flex items-center justify-between mb-3">
-                    <span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2.5 py-1 rounded-full">${post.category}</span>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-500/30">
+                        ${post.category}
+                    </span>
+                    <span class="inline-block bg-blue-900/50 text-blue-200 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-500/30 flex items-center">
+                        <span class="material-symbols-outlined text-[10px] mr-1">school</span>${ageGroup}
+                    </span>
                 </div>
-                <h3 class="text-lg font-semibold text-white mb-2">From Lesson: ${post.topic}</h3>
-                <div class="text-gray-300 text-sm space-y-2 prose prose-invert prose-sm max-w-none line-clamp-4">
+                <h3 class="text-lg font-bold text-white mb-2 line-clamp-1">From: ${post.topic}</h3>
+                <div class="text-gray-300 text-sm space-y-2 prose prose-invert prose-sm max-w-none line-clamp-4 relative">
                     ${post.content}
+                    <div class="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-gray-900/10 to-transparent"></div>
                 </div>
             </div>
             <div class="mt-4 pt-4 border-t border-gray-700 flex justify-between items-center">
                 <div>
-                    <p class="text-xs text-gray-400">Shared by: <span class="font-medium text-purple-300">${post.user_name}</span></p>
-                    <p class="text-gray-500 text-xs mt-1">${formattedDate}</p>
+                    <p class="text-xs text-gray-400">By <span class="font-medium text-purple-300">${post.user_name}</span></p>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-wider mt-0.5">${formattedDate}</p>
                 </div>
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center">
                     ${actionButtons}
                 </div>
             </div>
@@ -191,24 +207,27 @@ function setupModalListeners() {
 }
 
 
-function filterPosts(searchTerm) {
+function filterPosts(searchTerm, ageFilter) {
     const term = searchTerm.toLowerCase();
+    const selectedAge = ageFilter.toLowerCase(); // 'all', 'nursery', etc.
+
     const cards = document.querySelectorAll('.community-card');
     let visibleCount = 0;
 
     cards.forEach(card => {
+        // Text Match
         const title = card.querySelector('h3').textContent.toLowerCase();
         const content = card.querySelector('.prose').textContent.toLowerCase();
-        
-        // ** THE FIX **: Explicitly get the author's name from the correct element.
         const authorElement = card.querySelector('.font-medium.text-purple-300');
         const authorName = authorElement ? authorElement.textContent.toLowerCase() : '';
-        
-        const isMatch = title.includes(term) || 
-                        content.includes(term) || 
-                        authorName.includes(term);
+        const isTextMatch = title.includes(term) || content.includes(term) || authorName.includes(term);
 
-        if (isMatch) {
+        // Age Match
+        const cardAge = card.dataset.age.toLowerCase(); // We added data-age to the card HTML above
+        const isAgeMatch = (selectedAge === 'all') || cardAge.includes(selectedAge);
+
+        // Final Decision
+        if (isTextMatch && isAgeMatch) {
             card.style.display = 'flex';
             visibleCount++;
         } else {
@@ -216,16 +235,17 @@ function filterPosts(searchTerm) {
         }
     });
 
+    // Empty State Logic
     const emptyState = document.getElementById('empty-state');
     const grid = document.getElementById('community-grid');
+    
     if (visibleCount === 0 && cards.length > 0) {
         grid.style.display = 'none';
         emptyState.style.display = 'flex';
-        emptyState.querySelector('h3').textContent = 'No Threads Found';
-        emptyState.querySelector('p').textContent = 'Try a different search term to find what you\'re looking for.';
+        emptyState.querySelector('h3').textContent = 'No Matches Found';
+        emptyState.querySelector('p').textContent = 'Try adjusting your filters.';
     } else if (cards.length > 0) {
         grid.style.display = 'grid';
         emptyState.style.display = 'none';
     }
 }
-
