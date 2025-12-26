@@ -1,10 +1,11 @@
 import getSupabase from './supabaseClient.js';
 
 // ** ADMIN CONFIGURATION **
+// Ensure these are all lowercase for consistent matching
 const ADMIN_EMAILS = [
     "monika.pathak@choithramschool.com",
-    "second.admin@school.com", // Add your 2nd admin email here
-    "third.admin@school.com"   // Add your 3rd admin email here
+    "vip.pathak.ai.com", 
+    "learningloom.montessori@gmail.com"
 ];
 
 // --- Helper Functions ---
@@ -51,8 +52,9 @@ async function handlePageAuth() {
     const isAuthPage = window.location.pathname.includes('/sign-in.html') || window.location.pathname.includes('/sign-up.html');
 
     if (session) {
-        // User is logged in, check if they are approved
-        const userEmail = session.user.email;
+        const userEmail = session.user.email.toLowerCase();
+        
+        // Fetch Profile Status
         const { data: profile } = await supabase
             .from('profiles')
             .select('is_approved')
@@ -73,6 +75,26 @@ async function handlePageAuth() {
             // LOGGED IN AND APPROVED -> GO TO DASHBOARD
             window.location.replace('/dashboard.html');
             return;
+        }
+
+        // --- 5. INJECT ADMIN LINK (Only if Logged In & Admin) ---
+        if (isAdmin) {
+            // Try to find the Logout button container to inject the link before it
+            const logoutBtn = document.getElementById('logoutButton');
+            
+            if (logoutBtn && logoutBtn.parentElement) {
+                // Prevent duplicate buttons
+                if (!document.getElementById('admin-link-item')) {
+                    const adminLink = document.createElement('a');
+                    adminLink.id = 'admin-link-item';
+                    adminLink.href = '/admin-panel.html';
+                    adminLink.className = "flex items-center px-4 py-2 text-sm text-yellow-400 hover:bg-purple-600 hover:text-white transition-colors cursor-pointer";
+                    adminLink.innerHTML = `<span class="material-symbols-outlined mr-3">admin_panel_settings</span> Admin Panel`;
+                    
+                    // Insert it before the Logout button in the menu
+                    logoutBtn.parentElement.insertBefore(adminLink, logoutBtn);
+                }
+            }
         }
     }
 
@@ -95,7 +117,7 @@ async function handlePageAuth() {
             e.preventDefault();
             setLoadingState(signInForm, true);
             
-            const email = signInForm.email.value;
+            const email = signInForm.email.value.trim().toLowerCase();
             const password = signInForm.password.value;
             
             // A. Attempt Login
@@ -137,7 +159,7 @@ async function handlePageAuth() {
         signUpForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const email = signUpForm.email.value;
+            const email = signUpForm.email.value.trim().toLowerCase();
             const password = signUpForm.password.value;
             const fullName = signUpForm['full-name'].value;
 
@@ -181,4 +203,5 @@ async function handlePageAuth() {
     }
 }
 
+// Run the logic
 handlePageAuth();
