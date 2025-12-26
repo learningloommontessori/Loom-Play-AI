@@ -131,7 +131,7 @@ function attachCardListeners() {
     });
 }
 
-// --- SHARE MODAL (Now with Visuals) ---
+// --- COMPACT SHARE MODAL ---
 
 async function openShareSelectionModal(event) {
     const card = event.currentTarget.closest('.lesson-card');
@@ -157,7 +157,7 @@ async function openShareSelectionModal(event) {
         return;
     }
 
-    // 2. Generate Options (Text + Visuals)
+    // 2. Generate Options
     const options = generateShareableItems(lessonData);
 
     if (options.length === 0) {
@@ -168,7 +168,7 @@ async function openShareSelectionModal(event) {
     // 3. Build Compact UI
     let html = `
         <div class="flex flex-col h-full">
-            <p class="text-xs text-gray-400 mb-2 px-1">Select threads to share. Visuals will appear as images in the Loom.</p>
+            <p class="text-xs text-gray-400 mb-2 px-1">Select threads to share:</p>
             
             <div class="flex-grow overflow-y-auto pr-1 space-y-2 max-h-[55vh] custom-scrollbar">
     `;
@@ -178,6 +178,7 @@ async function openShareSelectionModal(event) {
     options.forEach((opt, index) => {
         if (opt.group !== currentGroup) {
             currentGroup = opt.group;
+            // Compact Header
             html += `
                 <div class="sticky top-0 bg-gray-800/95 backdrop-blur z-10 py-1 px-1 border-b border-gray-700 mb-1 mt-2 first:mt-0">
                     <h5 class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">${currentGroup}</h5>
@@ -185,6 +186,7 @@ async function openShareSelectionModal(event) {
             `;
         }
 
+        // Compact Row
         html += `
             <label class="flex items-center p-1.5 rounded-md bg-gray-700/20 border border-gray-700/50 hover:bg-gray-700/50 hover:border-purple-500/30 cursor-pointer transition-all group">
                 <div class="flex items-center h-full">
@@ -240,89 +242,90 @@ async function openShareSelectionModal(event) {
     };
 }
 
-// Generate Items (Includes Visuals!)
+// Generate the Comprehensive List of Items
 function generateShareableItems(lesson) {
     const items = [];
     const json = lesson.content_json;
     if (!json) return items;
 
-    // 1. Helper for text items
-    const addTextItem = (group, label, category, content, icon, color) => {
+    // Helper to add item
+    const addItem = (group, label, category, content, icon, color) => {
         const text = Array.isArray(content) ? content.join(" ") : content;
         if (!text) return;
         items.push({
-            group, label, category, content: text, icon, iconColor: color, preview: text.substring(0, 50)
+            group,
+            label,
+            category,
+            content: text,
+            icon,
+            iconColor: color,
+            preview: text.substring(0, 50)
         });
     };
 
-    // 2. Helper for VISUAL items
-    const addVisualItem = (label, promptContext) => {
-        // Create Deterministic Seed from Lesson ID + Label
-        const uniqueString = lesson.id + label;
-        let seed = 0;
-        for (let i = 0; i < uniqueString.length; i++) seed = (seed << 5) - seed + uniqueString.charCodeAt(i);
-        seed = Math.abs(seed);
+    // 1. Full Plan
+    items.push({
+        group: "Overview",
+        label: "Full Lesson Plan",
+        category: "Full Plan",
+        content: buildLessonHtml(json),
+        icon: "description",
+        iconColor: "text-white",
+        preview: "Share the entire generated document."
+    });
 
-        const specificPrompt = encodeURIComponent(`educational illustration for ${label}: ${promptContext.substring(0, 100)}, ${lesson.topic}, children's book style, clear, colorful`);
-        const imageUrl = `https://image.pollinations.ai/prompt/${specificPrompt}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
-        
-        // Use an HTML Image tag as content so the Hub renders it
-        const htmlContent = `<figure><img src="${imageUrl}" alt="${label}" class="rounded-lg w-full h-64 object-cover"><figcaption class="mt-2 text-sm text-gray-400 italic">${promptContext.substring(0, 100)}...</figcaption></figure>`;
-
-        items.push({
-            group: "Visuals",
-            label: `Image: ${label}`,
-            category: "Visual",
-            content: htmlContent,
-            icon: "image",
-            iconColor: "text-pink-500",
-            preview: "Generated illustration"
-        });
-    };
-
-    // A. Visuals (Top Priority)
-    addVisualItem("Cover Art", `A cover image representing ${lesson.topic}`);
-    if (json.newlyCreatedContent?.originalRhyme) addVisualItem("Rhyme Illustration", json.newlyCreatedContent.originalRhyme);
-    
-    // B. Text Content
-    addTextItem("Overview", "Full Lesson Plan", "Full Plan", buildLessonHtml(json), "description", "text-white");
-
+    // 2. Creative (Rhymes & Stories)
     if (json.newlyCreatedContent) {
-        if (json.newlyCreatedContent.originalRhyme) addTextItem("Creative Arts", "Original Rhyme", "Rhyme", json.newlyCreatedContent.originalRhyme, "music_note", "text-pink-400");
-        if (json.newlyCreatedContent.originalMiniStory) addTextItem("Creative Arts", "Mini Story", "Story", json.newlyCreatedContent.originalMiniStory, "auto_stories", "text-yellow-400");
+        if (json.newlyCreatedContent.originalRhyme) 
+            addItem("Creative Arts", "Original Rhyme", "Rhyme", json.newlyCreatedContent.originalRhyme, "music_note", "text-pink-400");
+        if (json.newlyCreatedContent.originalMiniStory) 
+            addItem("Creative Arts", "Mini Story", "Story", json.newlyCreatedContent.originalMiniStory, "auto_stories", "text-yellow-400");
     }
 
+    // 3. New Activities
     if (json.newActivities) {
         Object.entries(json.newActivities).forEach(([key, val]) => {
             const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            addTextItem("Classroom Activities", title, "Activity", val, "extension", "text-blue-400");
+            addItem("Classroom Activities", title, "Activity", val, "extension", "text-blue-400");
         });
     }
 
+    // 4. Movement & Music
     if (json.movementAndMusic) {
         Object.entries(json.movementAndMusic).forEach(([key, val]) => {
             const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            addTextItem("Movement & Music", title, "Movement", val, "directions_run", "text-green-400");
+            addItem("Movement & Music", title, "Movement", val, "directions_run", "text-green-400");
         });
     }
-    
-    // Add other sections similarly...
+
+    // 5. Social & Emotional
     if (json.socialAndEmotionalLearning) {
         Object.entries(json.socialAndEmotionalLearning).forEach(([key, val]) => {
             const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            addTextItem("Social & Emotional", title, "SEL", val, "diversity_3", "text-orange-400");
+            addItem("Social & Emotional", title, "SEL", val, "diversity_3", "text-orange-400");
         });
     }
+
+    // 6. Montessori Connections
+    if (json.montessoriConnections) {
+        Object.entries(json.montessoriConnections).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addItem("Montessori Method", title, "Methodology", val, "school", "text-indigo-400");
+        });
+    }
+
+    // 7. Teacher Resources
     if (json.teacherResources) {
         Object.entries(json.teacherResources).forEach(([key, val]) => {
             const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            addTextItem("Teacher Guide", title, "Resource", val, "menu_book", "text-teal-400");
+            addItem("Teacher Guide", title, "Resource", val, "menu_book", "text-teal-400");
         });
     }
 
     return items;
 }
 
+// Upload Batch
 async function executeBatchShare(items, lessonData, buttonElement) {
     const originalContent = buttonElement.innerHTML;
     buttonElement.innerHTML = `<span class="animate-spin material-symbols-outlined mr-2 text-sm">progress_activity</span> Sharing...`;
@@ -361,7 +364,7 @@ async function executeBatchShare(items, lessonData, buttonElement) {
 }
 
 
-// --- VIEW LESSON LOGIC (Now with Images Displayed) ---
+// --- VIEW & DELETE LOGIC (Unchanged) ---
 
 async function handleViewLesson(event) {
     const card = event.currentTarget.closest('.lesson-card');
@@ -383,13 +386,7 @@ async function handleViewLesson(event) {
         return;
     }
 
-    // Build Text Content
-    let htmlContent = buildLessonHtml(data.content_json);
-    
-    // Build Visual Gallery HTML
-    htmlContent += buildVisualGalleryHtml(data.content_json, lessonId, topic);
-
-    modalContent.innerHTML = htmlContent;
+    modalContent.innerHTML = buildLessonHtml(data.content_json);
 }
 
 function buildLessonHtml(lessonData) {
@@ -415,55 +412,6 @@ function buildLessonHtml(lessonData) {
     }
     html += '</div>';
     return html;
-}
-
-// Helper to Build Gallery in Modal
-function buildVisualGalleryHtml(lessonPlan, lessonId, topic) {
-    let galleryHtml = `
-        <div class="mt-8 pt-6 border-t border-gray-700">
-            <h4 class="text-xl font-bold text-white mb-4 flex items-center">
-                <span class="material-symbols-outlined mr-2 text-purple-400">palette</span> Visual Gallery
-            </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-    `;
-
-    const createGalleryItem = (title, label, promptContext) => {
-        // Deterministic Seed Logic
-        const uniqueString = lessonId + label;
-        let seed = 0;
-        for (let i = 0; i < uniqueString.length; i++) seed = (seed << 5) - seed + uniqueString.charCodeAt(i);
-        seed = Math.abs(seed);
-
-        const specificPrompt = encodeURIComponent(`educational illustration for ${label}: ${promptContext.substring(0, 100)}, ${topic}, children's book style, clear, colorful`);
-        const imageUrl = `https://image.pollinations.ai/prompt/${specificPrompt}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
-
-        return `
-            <div class="bg-gray-700/30 rounded-lg overflow-hidden border border-gray-600/50">
-                <div class="p-2 border-b border-gray-600/50 bg-gray-800/50">
-                    <h5 class="text-xs font-bold text-gray-300 uppercase">${title}</h5>
-                </div>
-                <div class="aspect-square relative group">
-                    <img src="${imageUrl}" class="w-full h-full object-cover" loading="lazy" alt="${title}">
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <a href="${imageUrl}" download="${title}.jpg" target="_blank" class="p-2 bg-purple-600 rounded-full text-white hover:bg-purple-500 shadow-lg">
-                            <span class="material-symbols-outlined text-sm">download</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        `;
-    };
-
-    // Add Cover
-    galleryHtml += createGalleryItem("Cover Art", "Lesson Cover", `A cover image representing ${topic}`);
-
-    // Add Rhymes
-    if (lessonPlan.newlyCreatedContent?.originalRhyme) {
-        galleryHtml += createGalleryItem("Rhyme Illustration", "Rhyme", lessonPlan.newlyCreatedContent.originalRhyme);
-    }
-
-    galleryHtml += `</div></div>`;
-    return galleryHtml;
 }
 
 async function handleDeleteLesson(event) {
