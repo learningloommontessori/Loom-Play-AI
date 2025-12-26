@@ -132,7 +132,7 @@ function attachCardListeners() {
     });
 }
 
-// --- COMPACT SHARE MODAL ---
+// --- SHARE MODAL ---
 
 async function openShareSelectionModal(event) {
     const card = event.currentTarget.closest('.lesson-card');
@@ -255,21 +255,6 @@ function generateShareableItems(lesson) {
         items.push({ group, label, category, content: text, icon, iconColor: color, preview: text.substring(0, 50) });
     };
 
-    const addVisualItem = (label, promptContext) => {
-        const uniqueString = lesson.id + label;
-        let seed = 0;
-        for (let i = 0; i < uniqueString.length; i++) seed = (seed << 5) - seed + uniqueString.charCodeAt(i);
-        seed = Math.abs(seed);
-        const specificPrompt = encodeURIComponent(`educational illustration for ${label}: ${promptContext.substring(0, 100)}, ${lesson.topic}, children's book style, clear, colorful`);
-        const imageUrl = `https://image.pollinations.ai/prompt/${specificPrompt}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
-        const htmlContent = `<figure class="mb-4"><img src="${imageUrl}" alt="${label}" class="rounded-lg w-full h-auto object-cover"><figcaption class="mt-1 text-xs text-gray-400 italic">Image: ${label}</figcaption></figure>`;
-        items.push({ group: "Visuals", label: `Image: ${label}`, category: "Visual", content: htmlContent, icon: "image", iconColor: "text-pink-500", preview: "Generated illustration" });
-    };
-
-    // A. Visuals
-    addVisualItem("Cover Art", `A cover image representing ${lesson.topic}`);
-    if (json.newlyCreatedContent?.originalRhyme) addVisualItem("Rhyme Illustration", json.newlyCreatedContent.originalRhyme);
-
     // B. Text Content
     addTextItem("Overview", "Full Lesson Plan", "Full Plan", buildLessonHtml(json), "description", "text-white");
     if (json.newlyCreatedContent) {
@@ -282,12 +267,29 @@ function generateShareableItems(lesson) {
             addTextItem("Classroom Activities", title, "Activity", val, "extension", "text-blue-400");
         });
     }
-    // ... Add other categories as needed ...
+    if (json.movementAndMusic) {
+        Object.entries(json.movementAndMusic).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addTextItem("Movement & Music", title, "Movement", val, "directions_run", "text-green-400");
+        });
+    }
+    if (json.socialAndEmotionalLearning) {
+        Object.entries(json.socialAndEmotionalLearning).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addTextItem("Social & Emotional", title, "SEL", val, "diversity_3", "text-orange-400");
+        });
+    }
+    if (json.teacherResources) {
+        Object.entries(json.teacherResources).forEach(([key, val]) => {
+            const title = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            addTextItem("Teacher Guide", title, "Resource", val, "menu_book", "text-teal-400");
+        });
+    }
     
     return items;
 }
 
-// ** THE FIX: BUNDLE EVERYTHING INTO ONE POST **
+// Bundle function
 async function executeBatchShare(items, lessonData, buttonElement) {
     const originalContent = buttonElement.innerHTML;
     buttonElement.innerHTML = `<span class="animate-spin material-symbols-outlined mr-2 text-sm">progress_activity</span> Bundling...`;
@@ -301,7 +303,6 @@ async function executeBatchShare(items, lessonData, buttonElement) {
     const combinedCategoryString = distinctCategories.join(',');
 
     // 2. Combine Content
-    // We wrap each item in a div to keep them distinct but in one block
     const combinedContent = items.map(item => `
         <div class="shared-item mb-6">
             <h4 class="text-purple-300 font-bold text-lg mb-2 flex items-center">
@@ -316,7 +317,7 @@ async function executeBatchShare(items, lessonData, buttonElement) {
         user_id: user.id,
         user_name: user.user_metadata?.full_name || user.email,
         topic: lessonData.topic,
-        category: combinedCategoryString, // Saving "Rhyme,Activity,Visual" etc.
+        category: combinedCategoryString, 
         content: combinedContent,
         age: lessonData.age || 'General'
     }]);
@@ -336,7 +337,9 @@ async function executeBatchShare(items, lessonData, buttonElement) {
     }
 }
 
-// ... (Rest of View/Delete functions remain the same) ...
+
+// --- VIEW LESSON LOGIC (Removed Images) ---
+
 async function handleViewLesson(event) {
     const card = event.currentTarget.closest('.lesson-card');
     const lessonId = card.dataset.lessonId;
@@ -356,26 +359,9 @@ async function handleViewLesson(event) {
         modalContent.innerHTML = `<p class="text-red-400 text-center">Could not load lesson details.</p>`;
         return;
     }
-    
-    // Helper function to build visual gallery (reusing logic for view)
-    const buildVisualGalleryHtml = (lessonPlan, id, title) => {
-        let galleryHtml = `<div class="mt-8 pt-6 border-t border-gray-700"><h4 class="text-xl font-bold text-white mb-4">Visual Gallery</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">`;
-        const createGalleryItem = (label, promptContext) => {
-            const uniqueString = id + label;
-            let seed = 0;
-            for (let i = 0; i < uniqueString.length; i++) seed = (seed << 5) - seed + uniqueString.charCodeAt(i);
-            seed = Math.abs(seed);
-            const specificPrompt = encodeURIComponent(`educational illustration for ${label}: ${promptContext.substring(0, 100)}, ${title}, children's book style, clear, colorful`);
-            const imageUrl = `https://image.pollinations.ai/prompt/${specificPrompt}?width=768&height=768&seed=${seed}&nologo=true&model=flux`;
-            return `<div class="bg-gray-700/30 rounded-lg overflow-hidden border border-gray-600/50"><div class="p-2 border-b border-gray-600/50 bg-gray-800/50"><h5 class="text-xs font-bold text-gray-300 uppercase">${label}</h5></div><div class="aspect-square relative group"><img src="${imageUrl}" class="w-full h-full object-cover"><div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><a href="${imageUrl}" download="${label}.jpg" target="_blank" class="p-2 bg-purple-600 rounded-full text-white"><span class="material-symbols-outlined text-sm">download</span></a></div></div></div>`;
-        };
-        galleryHtml += createGalleryItem("Lesson Cover", `Cover for ${title}`);
-        if (lessonPlan.newlyCreatedContent?.originalRhyme) galleryHtml += createGalleryItem("Rhyme Illustration", lessonPlan.newlyCreatedContent.originalRhyme);
-        galleryHtml += `</div></div>`;
-        return galleryHtml;
-    };
 
-    modalContent.innerHTML = buildLessonHtml(data.content_json) + buildVisualGalleryHtml(data.content_json, lessonId, topic);
+    // Just load the text content, no images
+    modalContent.innerHTML = buildLessonHtml(data.content_json);
 }
 
 function buildLessonHtml(lessonData) {

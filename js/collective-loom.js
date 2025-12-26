@@ -81,18 +81,21 @@ async function fetchAndDisplayPosts() {
     }
 }
 
+// Helper for Title Case
+function toTitleCase(str) {
+    if (!str) return '';
+    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
+
 function createPostCard(post) {
     const formattedDate = new Date(post.created_at).toLocaleString('en-US', {
         month: 'short', day: 'numeric', year: 'numeric'
     });
     
     const ageGroup = post.age || 'General';
-
-    // ** THE FIX: SPLIT CATEGORIES INTO MULTIPLE TAGS **
-    // If post.category is "Rhyme,Activity", split it. If just "Rhyme", it's an array of 1.
     const categories = post.category ? post.category.split(',') : ['General'];
     
-    // Generate HTML for each tag side-by-side
+    // Create multiple tags
     const categoryTags = categories.map(cat => `
         <span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-500/30">
             ${cat.trim()}
@@ -113,6 +116,9 @@ function createPostCard(post) {
         ` + actionButtons;
     }
     
+    // ** THE FIX: REMOVED "From: " AND ADDED TITLE CASE **
+    const displayTopic = toTitleCase(post.topic);
+
     return `
         <div class="community-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden flex flex-col justify-between p-6 hover:border-purple-500 border border-transparent transition-all duration-300" data-age="${ageGroup}">
             <div>
@@ -123,7 +129,7 @@ function createPostCard(post) {
                     </span>
                 </div>
                 
-                <h3 class="text-lg font-bold text-white mb-2 line-clamp-1">From: ${post.topic}</h3>
+                <h3 class="text-lg font-bold text-white mb-2 line-clamp-1">${displayTopic}</h3>
                 
                 <div class="text-gray-300 text-sm space-y-2 prose prose-invert prose-sm max-w-none line-clamp-4 relative">
                     ${post.content}
@@ -184,7 +190,10 @@ function showPostModal(postId) {
     const post = window.communityPosts.get(postId);
     if (!post) return;
 
-    document.getElementById('modal-title').textContent = `From Lesson: ${post.topic}`;
+    // ** FIX TITLE IN MODAL TOO **
+    const displayTopic = toTitleCase(post.topic);
+    document.getElementById('modal-title').textContent = `${displayTopic}`;
+    
     document.getElementById('modal-content').innerHTML = post.content;
     document.getElementById('post-modal').classList.remove('hidden');
 }
