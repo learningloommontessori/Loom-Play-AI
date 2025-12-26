@@ -5,14 +5,13 @@ let currentUserId;
 
 document.addEventListener('DOMContentLoaded', async () => {
     supabase = await getSupabase();
-    // 1. Authentication & User Info
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
         window.location.href = '/sign-in.html';
         return;
     }
     const user = session.user;
-    currentUserId = user.id; 
+    currentUserId = user.id;
     const userName = user.user_metadata?.full_name || user.email;
 
     const welcomeMessage = document.getElementById('welcome-message');
@@ -105,7 +104,6 @@ function createPostCard(post) {
         <button class="download-btn text-gray-400 hover:text-green-400 transition-colors mr-2" title="Download PDF" data-post-id="${post.post_id}">
             <span class="material-symbols-outlined text-xl">download</span>
         </button>
-
         <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
             View More <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
         </button>
@@ -171,15 +169,12 @@ function attachCardListeners() {
     });
 }
 
-// --- IMPROVED PDF DOWNLOAD FUNCTION ---
+// --- UPGRADED HTML-TO-PDF GENERATOR ---
 async function handleDownloadPost(postId) {
     const post = window.communityPosts.get(postId);
     if (!post) return;
 
-    if (!window.jspdf) {
-        alert("PDF Library not loaded. Please refresh the page.");
-        return;
-    }
+    if (!window.jspdf) return alert("PDF Library not loaded. Please refresh the page.");
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -189,110 +184,116 @@ async function handleDownloadPost(postId) {
     const maxLineWidth = pageWidth - margin * 2;
     let y = 20;
 
-    // Helper: Add Text safely with paging
-    const addText = (text, size = 12, weight = 'normal', color = [0, 0, 0]) => {
+    // Smart Text Adder (handles page breaks)
+    const addText = (text, size, weight, color, indent = 0) => {
         if (!text) return;
         doc.setFontSize(size);
         doc.setFont(undefined, weight);
         doc.setTextColor(...color);
         
-        const splitText = doc.splitTextToSize(text, maxLineWidth);
+        const splitText = doc.splitTextToSize(text, maxLineWidth - indent);
         const textHeight = doc.getTextDimensions(splitText).h;
         
-        if (y + textHeight > 280) { // Page break
+        if (y + textHeight > 280) {
             doc.addPage();
             y = 20;
         }
         
-        doc.text(splitText, margin, y);
-        y += textHeight + 2; // Default line spacing
+        doc.text(splitText, margin + indent, y);
+        y += textHeight + 2; 
     };
 
-    // 1. Header
-    addText("Shared Lesson Idea", 10, 'normal', [100, 100, 100]); 
-    addText(toTitleCase(post.topic), 22, 'bold', [102, 51, 153]); 
+    // 1. Header (Matches History Page Style)
+    addText("Shared Lesson Idea", 10, 'normal', [100, 100, 100]);
+    addText(toTitleCase(post.topic), 22, 'bold', [102, 51, 153]); // Purple Title
     
     doc.setLineWidth(0.5);
     doc.setDrawColor(200, 200, 200);
     doc.line(margin, y + 2, pageWidth - margin, y + 2);
     y += 12;
 
-    addText(`Shared By: ${post.user_name}`, 12, 'italic', [80, 80, 80]);
-    addText(`Category: ${post.category || 'General'}`, 12, 'normal', [80, 80, 80]);
-    addText(`Age Group: ${post.age || 'All Ages'}`, 12, 'normal', [80, 80, 80]);
+    addText(`Shared By: ${post.user_name}`, 11, 'italic', [80, 80, 80]);
+    addText(`Age Group: ${post.age || 'General'}`, 11, 'normal', [80, 80, 80]);
     y += 10;
 
-    // 2. Parse Content (Handle Headers, Paragraphs, Lists)
+    // 2. Recursive HTML Parser
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = post.content;
 
-    // Find all 'shared-item' blocks (created by bundle share)
-    const items = tempDiv.querySelectorAll('.shared-item');
-
-    if (items.length > 0) {
-        items.forEach(item => {
-            // A. Item Title (e.g. "Original Rhyme")
-            const titleEl = item.querySelector('h4');
-            if (titleEl) {
-                // Remove the icon text if present
-                let titleText = titleEl.innerText || titleEl.textContent;
-                // Basic cleanup of icon ligatures (simple heuristic: remove first word if it looks like an icon name)
-                titleText = titleText.replace(/^[a-z_]+\s/i, '').trim(); 
-                
-                y += 5;
-                addText(titleText, 16, 'bold', [0, 0, 0]);
+    const processNode = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent.trim();
+            if (text && text.length > 1) { // Avoid stray characters
+                // Fallback for loose text
+                addText(text, 11, 'normal', [50, 50, 50]);
                 y += 2;
             }
+            return;
+        }
 
-            // B. Item Body - Walk through elements to format them
-            const bodyEl = item.querySelector('div'); // The content container
-            if (bodyEl) {
-                // Select all relevant tags in order
-                const childNodes = bodyEl.querySelectorAll('h4, h5, p, ul, div');
-                
-                if(childNodes.length === 0) {
-                    // Fallback for simple text
-                    addText(bodyEl.innerText.trim(), 12, 'normal', [50, 50, 50]);
-                } else {
-                    childNodes.forEach(node => {
-                        const text = node.innerText.trim();
-                        if(!text) return;
+        const tagName = node.tagName;
 
-                        if (node.tagName === 'H4') {
-                            y += 4;
-                            addText(text, 14, 'bold', [0, 0, 0]);
-                        } 
-                        else if (node.tagName === 'H5') {
-                            y += 3;
-                            addText(text, 13, 'bold', [60, 60, 60]);
-                        } 
-                        else if (node.tagName === 'UL') {
-                            const lis = node.querySelectorAll('li');
-                            lis.forEach(li => {
-                                addText(`• ${li.innerText.trim()}`, 12, 'normal', [50, 50, 50]);
-                            });
-                            y += 3;
-                        } 
-                        else if (node.tagName === 'P' || node.tagName === 'DIV') {
-                            // Only print if not empty and not just a wrapper for other block elements handled above
-                            if(node.children.length === 0 || node.tagName === 'P') {
-                                addText(text, 12, 'normal', [50, 50, 50]);
-                                y += 3; // Paragraph spacing
-                            }
-                        }
-                    });
-                }
-            }
+        // ** Section Header (e.g., New Activities) **
+        if (tagName === 'H4') {
+            y += 6;
+            // Draw background bar like history PDF
+            doc.setFillColor(245, 245, 255);
+            doc.rect(margin, y - 5, maxLineWidth, 10, 'F');
             
-            // Separator between items
-            y += 5;
-            doc.setDrawColor(240, 240, 240);
-            doc.line(margin, y, pageWidth - margin, y);
-            y += 10;
+            // Clean up title (remove icon names like 'music_note')
+            let title = node.innerText.replace(/^[a-z_]+\s/i, '').trim();
+            addText(title, 14, 'bold', [50, 0, 100]); // Purple header
+            y += 2;
+        }
+        // ** Sub-Activity Header (e.g., Art Craft) **
+        else if (tagName === 'H5') {
+            y += 4;
+            addText(node.innerText.trim(), 12, 'bold', [0, 0, 0]); // Bold Black
+            y += 1;
+        }
+        // ** Paragraphs **
+        else if (tagName === 'P') {
+            addText(node.innerText.trim(), 11, 'normal', [50, 50, 50]);
+            y += 3;
+        }
+        // ** Lists **
+        else if (tagName === 'UL') {
+            Array.from(node.children).forEach(li => {
+                if(li.tagName === 'LI') {
+                    addText(`• ${li.innerText.trim()}`, 11, 'normal', [50, 50, 50], 5); // Indent
+                    y -= 1; // Tighter list spacing
+                }
+            });
+            y += 3;
+        }
+        // ** Images (Skip them for text PDF to keep it clean) **
+        else if (tagName === 'IMG' || tagName === 'FIGURE') {
+            // Optional: You could add logic here to extract alt text or ignore
+        }
+        // ** Recursion for Divs/Spans **
+        else if (node.childNodes.length > 0) {
+            node.childNodes.forEach(child => processNode(child));
+        }
+    };
+
+    // Process the bundled content items
+    const items = tempDiv.querySelectorAll('.shared-item');
+    if(items.length > 0){
+        items.forEach(item => {
+            // Process the H4 inside shared-item directly first to ensure header styling
+            const header = item.querySelector('h4');
+            if(header) processNode(header);
+
+            // Process the content div
+            const body = item.querySelector('div');
+            if(body) {
+                body.childNodes.forEach(child => processNode(child));
+            }
+            y += 5; // Spacing between bundled items
         });
     } else {
-        // Fallback for older non-bundled posts
-        addText(tempDiv.innerText, 12, 'normal', [50, 50, 50]);
+        // Fallback for single/legacy posts
+        Array.from(tempDiv.childNodes).forEach(child => processNode(child));
     }
 
     // 3. Footer
