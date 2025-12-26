@@ -226,6 +226,7 @@ async function handlePageAuth() {
             setLoadingState(signUpForm, false);
         });
     }
+}
 
 // Run the logic
 handlePageAuth();
