@@ -50,6 +50,7 @@ async function fetchAndDisplayLessons(userId) {
     grid.innerHTML = '';
     emptyState.style.display = 'none';
 
+    // Fetch necessary fields
     let { data: lessons, error } = await supabase
         .from('AIGeneratedContent')
         .select('id, created_at, topic, language, age')
@@ -103,6 +104,10 @@ function createLessonCard(lesson) {
             <div class="px-6 pb-4 pt-2 border-t border-gray-800/50 flex justify-between items-center">
                 <span class="text-xs text-gray-500">${formattedDate}</span>
                 <div class="flex items-center space-x-1">
+                    <button class="download-btn p-2 text-gray-400 hover:text-green-400 transition-colors" title="Download PDF" data-lesson-id="${lesson.id}">
+                        <span class="material-symbols-outlined">download</span>
+                    </button>
+                    
                     <button class="view-btn p-2 text-gray-400 hover:text-white transition-colors" title="View Lesson">
                         <span class="material-symbols-outlined">visibility</span>
                     </button>
@@ -130,9 +135,121 @@ function attachCardListeners() {
     document.querySelectorAll('.share-btn').forEach(button => {
         button.addEventListener('click', openShareSelectionModal);
     });
+
+    // New Listener for Download
+    document.querySelectorAll('.download-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const card = e.currentTarget.closest('.lesson-card');
+            const lessonId = card.dataset.lessonId;
+            handleDownloadLesson(lessonId);
+        });
+    });
 }
 
-// --- SHARE MODAL ---
+// --- NEW PDF DOWNLOAD LOGIC ---
+async function handleDownloadLesson(lessonId) {
+    if (!window.jspdf) return alert("PDF Library loading... please wait.");
+
+    // Fetch full data for this lesson
+    const { data: lesson, error } = await supabase
+        .from('AIGeneratedContent')
+        .select('*')
+        .eq('id', lessonId)
+        .single();
+
+    if (error || !lesson) return alert("Could not fetch lesson data.");
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const margin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const maxLineWidth = pageWidth - margin * 2;
+    let y = 20;
+
+    const addText = (text, size = 12, weight = 'normal', color = [0, 0, 0]) => {
+        if (!text) return;
+        doc.setFontSize(size);
+        doc.setFont(undefined, weight);
+        doc.setTextColor(...color);
+        
+        const splitText = doc.splitTextToSize(text, maxLineWidth);
+        const textHeight = doc.getTextDimensions(splitText).h;
+        
+        if (y + textHeight > 280) {
+            doc.addPage();
+            y = 20;
+        }
+        
+        doc.text(splitText, margin, y);
+        y += textHeight + 4;
+    };
+
+    // 1. Header
+    addText("Lesson Plan", 10, 'normal', [100, 100, 100]);
+    addText(lesson.topic, 22, 'bold', [102, 51, 153]);
+    
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+
+    addText(`Age Group: ${lesson.age || 'General'}`, 12, 'normal', [60, 60, 60]);
+    addText(`Language: ${lesson.language || 'English'}`, 12, 'normal', [60, 60, 60]);
+    y += 10;
+
+    // 2. Content Iterator
+    const content = lesson.content_json;
+    if (content) {
+        for (const category in content) {
+            if (category === 'imagePrompt') continue;
+
+            // Category Title (e.g., "New Activities")
+            const categoryTitle = category.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            
+            // Separator
+            if (y > 250) { doc.addPage(); y = 20; }
+            doc.setFillColor(245, 245, 255);
+            doc.rect(margin, y - 5, maxLineWidth, 10, 'F'); // Background bar
+            addText(categoryTitle, 14, 'bold', [50, 0, 100]);
+            y += 2;
+
+            const subcategories = content[category];
+            for (const sub in subcategories) {
+                // Subcategory Title (e.g., "Art Craft Activity")
+                const subTitle = sub.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                addText(subTitle, 12, 'bold', [0, 0, 0]);
+
+                let body = subcategories[sub];
+                if (Array.isArray(body)) {
+                    // List
+                    body.forEach(item => {
+                        addText(`• ${item}`, 11, 'normal', [50, 50, 50]);
+                        y -= 2; // Tighter list spacing
+                    });
+                    y += 4;
+                } else {
+                    // Paragraph
+                    addText(body, 11, 'normal', [50, 50, 50]);
+                }
+                y += 2;
+            }
+            y += 5;
+        }
+    }
+
+    // 3. Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(`Page ${i} of ${pageCount} - Loom Play AI`, pageWidth / 2, 290, { align: 'center' });
+    }
+
+    doc.save(`${lesson.topic.replace(/\s+/g, '_')}_LessonPlan.pdf`);
+}
+
+// --- SHARE MODAL (Unchanged but included) ---
 
 async function openShareSelectionModal(event) {
     const card = event.currentTarget.closest('.lesson-card');
@@ -179,7 +296,6 @@ async function openShareSelectionModal(event) {
     options.forEach((opt, index) => {
         if (opt.group !== currentGroup) {
             currentGroup = opt.group;
-            // Compact Header
             html += `
                 <div class="sticky top-0 bg-gray-800/95 backdrop-blur z-10 py-1 px-1 border-b border-gray-700 mb-1 mt-2 first:mt-0">
                     <h5 class="text-[10px] font-bold text-purple-400 uppercase tracking-wider">${currentGroup}</h5>
@@ -187,7 +303,6 @@ async function openShareSelectionModal(event) {
             `;
         }
 
-        // Compact Row
         html += `
             <label class="flex items-center p-1.5 rounded-md bg-gray-700/20 border border-gray-700/50 hover:bg-gray-700/50 hover:border-purple-500/30 cursor-pointer transition-all group">
                 <div class="flex items-center h-full">
@@ -298,11 +413,9 @@ async function executeBatchShare(items, lessonData, buttonElement) {
     const { data: { session } } = await supabase.auth.getSession();
     const user = session.user;
 
-    // 1. Combine Categories (Unique list)
     const distinctCategories = [...new Set(items.map(i => i.category))];
     const combinedCategoryString = distinctCategories.join(',');
 
-    // 2. Combine Content
     const combinedContent = items.map(item => `
         <div class="shared-item mb-6">
             <h4 class="text-purple-300 font-bold text-lg mb-2 flex items-center">
@@ -338,7 +451,7 @@ async function executeBatchShare(items, lessonData, buttonElement) {
 }
 
 
-// --- VIEW LESSON LOGIC (Removed Images) ---
+// --- VIEW LESSON LOGIC ---
 
 async function handleViewLesson(event) {
     const card = event.currentTarget.closest('.lesson-card');
@@ -360,7 +473,6 @@ async function handleViewLesson(event) {
         return;
     }
 
-    // Just load the text content, no images
     modalContent.innerHTML = buildLessonHtml(data.content_json);
 }
 

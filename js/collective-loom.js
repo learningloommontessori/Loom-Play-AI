@@ -5,13 +5,14 @@ let currentUserId;
 
 document.addEventListener('DOMContentLoaded', async () => {
     supabase = await getSupabase();
+    // 1. Authentication & User Info
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
         window.location.href = '/sign-in.html';
         return;
     }
     const user = session.user;
-    currentUserId = user.id;
+    currentUserId = user.id; 
     const userName = user.user_metadata?.full_name || user.email;
 
     const welcomeMessage = document.getElementById('welcome-message');
@@ -81,7 +82,6 @@ async function fetchAndDisplayPosts() {
     }
 }
 
-// Helper for Title Case
 function toTitleCase(str) {
     if (!str) return '';
     return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -101,7 +101,6 @@ function createPostCard(post) {
         </span>
     `).join('');
 
-    // --- BUTTONS SECTION ---
     let actionButtons = `
         <button class="download-btn text-gray-400 hover:text-green-400 transition-colors mr-2" title="Download PDF" data-post-id="${post.post_id}">
             <span class="material-symbols-outlined text-xl">download</span>
@@ -164,7 +163,6 @@ function attachCardListeners() {
         button.addEventListener('click', handleDeletePost);
     });
 
-    // --- NEW LISTENER FOR DOWNLOAD ---
     document.querySelectorAll('.download-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const postId = e.currentTarget.dataset.postId;
@@ -173,7 +171,7 @@ function attachCardListeners() {
     });
 }
 
-// --- NEW PDF DOWNLOAD FUNCTION ---
+// --- IMPROVED PDF DOWNLOAD FUNCTION ---
 async function handleDownloadPost(postId) {
     const post = window.communityPosts.get(postId);
     if (!post) return;
@@ -191,8 +189,9 @@ async function handleDownloadPost(postId) {
     const maxLineWidth = pageWidth - margin * 2;
     let y = 20;
 
-    // Helper to add text and advance Y
+    // Helper: Add Text safely with paging
     const addText = (text, size = 12, weight = 'normal', color = [0, 0, 0]) => {
+        if (!text) return;
         doc.setFontSize(size);
         doc.setFont(undefined, weight);
         doc.setTextColor(...color);
@@ -200,61 +199,100 @@ async function handleDownloadPost(postId) {
         const splitText = doc.splitTextToSize(text, maxLineWidth);
         const textHeight = doc.getTextDimensions(splitText).h;
         
-        if (y + textHeight > 280) { // New page
+        if (y + textHeight > 280) { // Page break
             doc.addPage();
             y = 20;
         }
         
         doc.text(splitText, margin, y);
-        y += textHeight + 5;
+        y += textHeight + 2; // Default line spacing
     };
 
-    // 1. Header Info
-    addText("Shared Lesson Idea", 10, 'normal', [100, 100, 100]); // Grey Header
-    addText(toTitleCase(post.topic), 22, 'bold', [102, 51, 153]); // Purple Title
+    // 1. Header
+    addText("Shared Lesson Idea", 10, 'normal', [100, 100, 100]); 
+    addText(toTitleCase(post.topic), 22, 'bold', [102, 51, 153]); 
     
     doc.setLineWidth(0.5);
     doc.setDrawColor(200, 200, 200);
-    doc.line(margin, y, pageWidth - margin, y);
+    doc.line(margin, y + 2, pageWidth - margin, y + 2);
+    y += 12;
+
+    addText(`Shared By: ${post.user_name}`, 12, 'italic', [80, 80, 80]);
+    addText(`Category: ${post.category || 'General'}`, 12, 'normal', [80, 80, 80]);
+    addText(`Age Group: ${post.age || 'All Ages'}`, 12, 'normal', [80, 80, 80]);
     y += 10;
 
-    addText(`Shared By: ${post.user_name}`, 12, 'italic');
-    addText(`Category: ${post.category || 'General'}`, 12, 'normal');
-    addText(`Age Group: ${post.age || 'All Ages'}`, 12, 'normal');
-    y += 5;
-
-    // 2. Content Extraction
-    // We create a temporary DOM element to parse the HTML string
+    // 2. Parse Content (Handle Headers, Paragraphs, Lists)
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = post.content;
 
-    // We loop through the elements to try and format them nicely
-    // This handles the "bundled" format we created in history.js
+    // Find all 'shared-item' blocks (created by bundle share)
     const items = tempDiv.querySelectorAll('.shared-item');
-    
+
     if (items.length > 0) {
-        // Bundled Content
         items.forEach(item => {
+            // A. Item Title (e.g. "Original Rhyme")
             const titleEl = item.querySelector('h4');
-            const bodyEl = item.querySelector('div');
-
             if (titleEl) {
-                // Strip icon text if present
-                const cleanTitle = titleEl.textContent.replace(/^[a-z_]+\s/i, '').trim(); 
-                addText(cleanTitle, 16, 'bold', [0, 0, 0]);
+                // Remove the icon text if present
+                let titleText = titleEl.innerText || titleEl.textContent;
+                // Basic cleanup of icon ligatures (simple heuristic: remove first word if it looks like an icon name)
+                titleText = titleText.replace(/^[a-z_]+\s/i, '').trim(); 
+                
+                y += 5;
+                addText(titleText, 16, 'bold', [0, 0, 0]);
+                y += 2;
             }
 
+            // B. Item Body - Walk through elements to format them
+            const bodyEl = item.querySelector('div'); // The content container
             if (bodyEl) {
-                // Clean HTML tags for plain text PDF
-                const cleanBody = bodyEl.innerText || bodyEl.textContent;
-                addText(cleanBody, 12, 'normal', [50, 50, 50]);
-                y += 5; // Extra space between items
+                // Select all relevant tags in order
+                const childNodes = bodyEl.querySelectorAll('h4, h5, p, ul, div');
+                
+                if(childNodes.length === 0) {
+                    // Fallback for simple text
+                    addText(bodyEl.innerText.trim(), 12, 'normal', [50, 50, 50]);
+                } else {
+                    childNodes.forEach(node => {
+                        const text = node.innerText.trim();
+                        if(!text) return;
+
+                        if (node.tagName === 'H4') {
+                            y += 4;
+                            addText(text, 14, 'bold', [0, 0, 0]);
+                        } 
+                        else if (node.tagName === 'H5') {
+                            y += 3;
+                            addText(text, 13, 'bold', [60, 60, 60]);
+                        } 
+                        else if (node.tagName === 'UL') {
+                            const lis = node.querySelectorAll('li');
+                            lis.forEach(li => {
+                                addText(`• ${li.innerText.trim()}`, 12, 'normal', [50, 50, 50]);
+                            });
+                            y += 3;
+                        } 
+                        else if (node.tagName === 'P' || node.tagName === 'DIV') {
+                            // Only print if not empty and not just a wrapper for other block elements handled above
+                            if(node.children.length === 0 || node.tagName === 'P') {
+                                addText(text, 12, 'normal', [50, 50, 50]);
+                                y += 3; // Paragraph spacing
+                            }
+                        }
+                    });
+                }
             }
+            
+            // Separator between items
+            y += 5;
+            doc.setDrawColor(240, 240, 240);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += 10;
         });
     } else {
-        // Simple/Legacy Content (Direct text or basic HTML)
-        const cleanContent = tempDiv.innerText || tempDiv.textContent;
-        addText(cleanContent, 12, 'normal', [50, 50, 50]);
+        // Fallback for older non-bundled posts
+        addText(tempDiv.innerText, 12, 'normal', [50, 50, 50]);
     }
 
     // 3. Footer
@@ -323,7 +361,6 @@ function setupModalListeners() {
         }
     });
 }
-
 
 function filterPosts(searchTerm, ageFilter) {
     const term = searchTerm.toLowerCase();
