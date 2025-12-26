@@ -3,7 +3,7 @@ import getSupabase from './supabaseClient.js';
 // ** ADMIN CONFIGURATION **
 const ADMIN_EMAILS = [
     "monika.pathak@choithramschool.com",
-    "vip.pathak.ai.com", 
+    "vip.pathak.ai@gmail.com", 
     "learningloom.montessori@gmail.com"
 ];
 
