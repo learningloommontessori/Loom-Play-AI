@@ -95,14 +95,18 @@ function createPostCard(post) {
     const ageGroup = post.age || 'General';
     const categories = post.category ? post.category.split(',') : ['General'];
     
-    // Create multiple tags
     const categoryTags = categories.map(cat => `
         <span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-500/30">
             ${cat.trim()}
         </span>
     `).join('');
 
+    // --- BUTTONS SECTION ---
     let actionButtons = `
+        <button class="download-btn text-gray-400 hover:text-green-400 transition-colors mr-2" title="Download PDF" data-post-id="${post.post_id}">
+            <span class="material-symbols-outlined text-xl">download</span>
+        </button>
+
         <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
             View More <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
         </button>
@@ -110,13 +114,12 @@ function createPostCard(post) {
 
     if (post.user_id === currentUserId) {
         actionButtons = `
-            <button class="delete-btn text-gray-400 hover:text-red-500 transition-colors mr-3" title="Delete Post" data-post-id="${post.post_id}">
+            <button class="delete-btn text-gray-400 hover:text-red-500 transition-colors mr-2" title="Delete Post" data-post-id="${post.post_id}">
                 <span class="material-symbols-outlined text-lg">delete</span>
             </button>
         ` + actionButtons;
     }
     
-    // ** THE FIX: REMOVED "From: " AND ADDED TITLE CASE **
     const displayTopic = toTitleCase(post.topic);
 
     return `
@@ -160,6 +163,110 @@ function attachCardListeners() {
     document.querySelectorAll('.delete-btn').forEach(button => {
         button.addEventListener('click', handleDeletePost);
     });
+
+    // --- NEW LISTENER FOR DOWNLOAD ---
+    document.querySelectorAll('.download-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const postId = e.currentTarget.dataset.postId;
+            handleDownloadPost(postId);
+        });
+    });
+}
+
+// --- NEW PDF DOWNLOAD FUNCTION ---
+async function handleDownloadPost(postId) {
+    const post = window.communityPosts.get(postId);
+    if (!post) return;
+
+    if (!window.jspdf) {
+        alert("PDF Library not loaded. Please refresh the page.");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    const margin = 15;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const maxLineWidth = pageWidth - margin * 2;
+    let y = 20;
+
+    // Helper to add text and advance Y
+    const addText = (text, size = 12, weight = 'normal', color = [0, 0, 0]) => {
+        doc.setFontSize(size);
+        doc.setFont(undefined, weight);
+        doc.setTextColor(...color);
+        
+        const splitText = doc.splitTextToSize(text, maxLineWidth);
+        const textHeight = doc.getTextDimensions(splitText).h;
+        
+        if (y + textHeight > 280) { // New page
+            doc.addPage();
+            y = 20;
+        }
+        
+        doc.text(splitText, margin, y);
+        y += textHeight + 5;
+    };
+
+    // 1. Header Info
+    addText("Shared Lesson Idea", 10, 'normal', [100, 100, 100]); // Grey Header
+    addText(toTitleCase(post.topic), 22, 'bold', [102, 51, 153]); // Purple Title
+    
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 10;
+
+    addText(`Shared By: ${post.user_name}`, 12, 'italic');
+    addText(`Category: ${post.category || 'General'}`, 12, 'normal');
+    addText(`Age Group: ${post.age || 'All Ages'}`, 12, 'normal');
+    y += 5;
+
+    // 2. Content Extraction
+    // We create a temporary DOM element to parse the HTML string
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = post.content;
+
+    // We loop through the elements to try and format them nicely
+    // This handles the "bundled" format we created in history.js
+    const items = tempDiv.querySelectorAll('.shared-item');
+    
+    if (items.length > 0) {
+        // Bundled Content
+        items.forEach(item => {
+            const titleEl = item.querySelector('h4');
+            const bodyEl = item.querySelector('div');
+
+            if (titleEl) {
+                // Strip icon text if present
+                const cleanTitle = titleEl.textContent.replace(/^[a-z_]+\s/i, '').trim(); 
+                addText(cleanTitle, 16, 'bold', [0, 0, 0]);
+            }
+
+            if (bodyEl) {
+                // Clean HTML tags for plain text PDF
+                const cleanBody = bodyEl.innerText || bodyEl.textContent;
+                addText(cleanBody, 12, 'normal', [50, 50, 50]);
+                y += 5; // Extra space between items
+            }
+        });
+    } else {
+        // Simple/Legacy Content (Direct text or basic HTML)
+        const cleanContent = tempDiv.innerText || tempDiv.textContent;
+        addText(cleanContent, 12, 'normal', [50, 50, 50]);
+    }
+
+    // 3. Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(`Page ${i} of ${pageCount} - Loom Play AI`, pageWidth / 2, 290, { align: 'center' });
+    }
+
+    doc.save(`${toTitleCase(post.topic).replace(/\s+/g, '_')}_LoomIdea.pdf`);
 }
 
 async function handleDeletePost(event) {
@@ -190,7 +297,6 @@ function showPostModal(postId) {
     const post = window.communityPosts.get(postId);
     if (!post) return;
 
-    // ** FIX TITLE IN MODAL TOO **
     const displayTopic = toTitleCase(post.topic);
     document.getElementById('modal-title').textContent = `${displayTopic}`;
     
