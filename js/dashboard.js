@@ -1,46 +1,60 @@
 import getSupabase from './supabaseClient.js';
 
+// ** ADMIN CONFIGURATION **
+const ADMIN_EMAILS = [
+    "monika.pathak@choithramschool.com",
+    "vip.pathak.ai.com", 
+    "learningloom.montessori@gmail.com"
+];
+
 document.addEventListener('DOMContentLoaded', async () => {
     const supabase = await getSupabase();
 
-    // DOM Elements
-    const welcomeMessage = document.getElementById('welcome-message');
-    const userNameMain = document.getElementById('user-name-main');
-    const logoutButton = document.getElementById('logoutButton');
+    // 1. Check Session (Security Guard)
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-    // 1. Protect the page by checking for a logged-in user
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (user) {
-        // 2. If a user is found, display their information
-        const userName = user.user_metadata?.full_name;
-        
-        if (welcomeMessage) {
-            // Display first name in the header
-            welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;
-            welcomeMessage.classList.remove('hidden');
-        }
-        if (userNameMain) {
-            // Display full name in the main body
-            userNameMain.textContent = `Welcome, ${userName}`;
-        }
-    } else {
-        // 3. If no user is logged in, redirect to the sign-in page
+    if (error || !session) {
         window.location.href = '/sign-in.html';
-        return; // Stop the rest of the script from running
+        return;
     }
 
-    // 4. Set up the logout functionality
-    if (logoutButton) {
-        logoutButton.addEventListener('click', async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                console.error('Error logging out:', error);
-            } else {
-                // Redirect to the home page after successful logout
-                window.location.href = '/index.html';
-            }
+    const user = session.user;
+    const userEmail = user.email.toLowerCase();
+
+    // 2. Update Welcome Message
+    const userName = user.user_metadata?.full_name || user.email.split('@')[0];
+    const welcomeMsg = document.getElementById('welcome-message');
+    const mainTitle = document.getElementById('user-name-main');
+    
+    if (welcomeMsg) welcomeMsg.textContent = `Welcome, ${userName.split(' ')[0]}!`;
+    if (mainTitle) mainTitle.textContent = `Welcome, ${userName}`;
+
+    // 3. Logout Logic
+    const logoutBtn = document.getElementById('logoutButton');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/index.html';
         });
     }
-});
 
+    // 4. ** INJECT ADMIN LINK (The Missing Piece) **
+    // Check if the current user is an Admin
+    if (ADMIN_EMAILS.includes(userEmail)) {
+        // Find the profile dropdown container (parent of the logout button)
+        if (logoutBtn && logoutBtn.parentElement) {
+            // Prevent duplicates
+            if (!document.getElementById('admin-link-item')) {
+                const adminLink = document.createElement('a');
+                adminLink.id = 'admin-link-item';
+                adminLink.href = '/admin-panel.html';
+                // Using exact Tailwind classes from your dropdown for consistency
+                adminLink.className = "flex items-center px-4 py-3 text-sm text-yellow-400 hover:bg-purple-600 hover:text-white transition-colors cursor-pointer";
+                adminLink.innerHTML = `<span class="material-symbols-outlined mr-3">admin_panel_settings</span> Admin Panel`;
+                
+                // Insert it immediately before the Logout button
+                logoutBtn.parentElement.insertBefore(adminLink, logoutBtn);
+            }
+        }
+    }
+});
