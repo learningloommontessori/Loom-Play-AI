@@ -153,7 +153,7 @@ async function handlePageAuth() {
         });
     }
 
-    // --- 4. SIGN UP (Removed Watchdog, Added Profile Creation) ---
+   // --- 4. SIGN UP (Now with Mobile Verification) ---
     const signUpForm = document.getElementById('signUpForm');
     if (signUpForm) {
         signUpForm.addEventListener('submit', async (e) => {
@@ -162,15 +162,31 @@ async function handlePageAuth() {
             const email = signUpForm.email.value.trim().toLowerCase();
             const password = signUpForm.password.value;
             const fullName = signUpForm['full-name'].value;
+            const mobile = signUpForm.mobile.value.trim(); // <--- Get Mobile
 
             setLoadingState(signUpForm, true);
 
-            // A. Create Auth User
+            // A. PRE-CHECK: Does this mobile number already exist?
+            // We only check against non-admin users to maintain the "Except Admin" rule
+            const { data: existingUser, error: checkError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('mobile', mobile)
+                .eq('is_admin', false) // Only block if another regular user has it
+                .single();
+
+            if (existingUser) {
+                showMessage('error', 'This mobile number is already registered. Please sign in.');
+                setLoadingState(signUpForm, false);
+                return;
+            }
+
+            // B. Create Auth User
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
-                    data: { full_name: fullName },
+                    data: { full_name: fullName, mobile: mobile }, // Store in metadata too
                     emailRedirectTo: `${window.location.origin}/dashboard.html`
                 }
             });
@@ -178,7 +194,7 @@ async function handlePageAuth() {
             if (error) {
                 showMessage('error', error.message);
             } else {
-                // B. Create Pending Profile in 'profiles' table
+                // C. Create Profile with Mobile
                 if (data.user) {
                     const { error: profileError } = await supabase
                         .from('profiles')
@@ -186,11 +202,20 @@ async function handlePageAuth() {
                             id: data.user.id, 
                             email: email, 
                             full_name: fullName,
-                            is_approved: false, // Pending by default
+                            mobile: mobile,     // <--- Save Mobile
+                            is_approved: false, 
                             is_admin: false
                         }]);
                     
-                    if(profileError) console.error("Profile creation error:", profileError);
+                    if(profileError) {
+                        console.error("Profile error:", profileError);
+                        // Handle duplicate error from DB just in case race condition
+                        if (profileError.code === '23505') { // Unique violation code
+                            showMessage('error', 'This mobile number is already in use.');
+                            setLoadingState(signUpForm, false);
+                            return;
+                        }
+                    }
                 }
 
                 showMessage('success', 'Account created! Please wait for Admin approval before logging in.');
@@ -201,7 +226,6 @@ async function handlePageAuth() {
             setLoadingState(signUpForm, false);
         });
     }
-}
 
 // Run the logic
 handlePageAuth();

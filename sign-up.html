@@ -39,6 +39,21 @@
           <div id="error-message" class="bg-red-900/50 border border-red-500 rounded-md p-3 hidden"><div class="flex"><span class="material-symbols-outlined text-red-400">error</span><div class="ml-3"><h3 class="text-sm font-medium text-red-300">Something went wrong</h3><p id="error-text" class="mt-2 text-sm text-red-400">Could not sign up. Please try again.</p></div></div></div>
           <div><label class="block text-sm font-medium text-gray-300" for="full-name">Full Name</label><input class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="full-name" name="full-name" placeholder="e.g., Jane Doe" required type="text" /></div>
           <div><label class="block text-sm font-medium text-gray-300" for="email">Email Address</label><input autocomplete="email" class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="email" name="email" placeholder="you@example.com" required type="email" /></div>
+
+<div>
+    <label class="block text-sm font-medium text-gray-300" for="mobile">Mobile Number</label>
+    <input 
+        class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" 
+        id="mobile" 
+        name="mobile" 
+        placeholder="e.g., 9876543210" 
+        required 
+        type="tel" 
+        pattern="[0-9]{10}" 
+        title="Please enter a valid 10-digit mobile number"
+    />
+</div>
+
           <div><label class="block text-sm font-medium text-gray-300" for="password">Password</label><input autocomplete="new-password" class="w-full pl-3 pr-4 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500" id="password" name="password" placeholder="Min. 8 characters" required type="password" /><div id="password-strength-meter" class="mt-2 space-y-2"><div class="w-full h-2 rounded-full bg-gray-700"><div id="password-strength-bar" class="h-2 rounded-full transition-all duration-300" style="width: 0%;"></div></div><p id="password-strength-text" class="text-xs text-gray-400 font-medium"></p><ul id="password-criteria" class="text-xs text-gray-400 list-disc list-inside space-y-1 pl-1"><li id="length-check">At least 8 characters</li><li id="case-check">Mix of uppercase & lowercase</li><li id="number-check">At least one number or symbol</li></ul></div></div>
           <div><label class="block text-sm font-medium text-gray-300" for="confirm-password">Confirm Password</label><div class="mt-1 relative"><input autocomplete="new-password" class="w-full pl-3 pr-10 py-2 bg-gray-800/60 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500" id="confirm-password" name="confirm-password" required type="password" /><span id="password-match-icon" class="material-symbols-outlined absolute inset-y-0 right-0 pr-3 flex items-center text-green-500 hidden"></span></div><p id="password-match-text" class="mt-2 text-xs text-green-400 hidden"></p></div>
           <div class="flex items-start"><div class="flex items-center h-5"><input class="h-4 w-4 rounded border-gray-500 bg-gray-700 text-purple-600 focus:ring-purple-500 focus:ring-offset-gray-900" id="terms" name="terms" required type="checkbox" /></div><div class="ml-3 text-sm"><label class="font-medium text-gray-300" for="terms">I agree to the <a class="text-purple-400 hover:text-purple-300" href="#">Terms of Service</a></label></div></div>
