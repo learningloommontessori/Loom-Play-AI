@@ -4,7 +4,7 @@ import getSupabase from './supabaseClient.js';
 // Ensure these are all lowercase for consistent matching
 const ADMIN_EMAILS = [
     "monika.pathak@choithramschool.com",
-    "vip.pathak.ai.com", 
+    "vip.pathak.ai@gmail.com", 
     "learningloom.montessori@gmail.com"
 ];
 
