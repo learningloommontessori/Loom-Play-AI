@@ -3,11 +3,11 @@ import getSupabase from './supabaseClient.js';
 
 let supabase;
 let currentUserSession;
-let currentLessonData = null; // Global holder for the raw lesson data
+let currentLessonData = null; 
 let currentTopic = '';
-let currentLanguage = 'English'; // Default language
+let currentLanguage = 'English'; 
+let currentAge = 'Nursery'; // Default Age
 
-// --- Main Page Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
     supabase = await getSupabase();
     
@@ -27,8 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/index.html';
     });
     
+    // 1. Retrieve Data from LocalStorage
     currentTopic = localStorage.getItem('currentTopic');
     currentLanguage = localStorage.getItem('generationLanguage') || 'English';
+    currentAge = localStorage.getItem('selectedAge') || 'Nursery'; // <--- RETRIEVE AGE
 
     if (!currentTopic) {
         alert('No topic found. Redirecting to start a new lesson.');
@@ -37,11 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     setupTabInteractions();
-    generateAndDisplayContent(currentTopic, currentLanguage, session.access_token);
+    // 2. Pass 'currentAge' to the function
+    generateAndDisplayContent(currentTopic, currentLanguage, currentAge, session.access_token);
 });
 
-// --- API Call and Content Display ---
-async function generateAndDisplayContent(topic, language, token) {
+async function generateAndDisplayContent(topic, language, age, token) {
     const loader = document.getElementById('loader');
     const mainContent = document.getElementById('main-content');
     
@@ -52,7 +54,8 @@ async function generateAndDisplayContent(topic, language, token) {
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ topic, language }),
+            // 3. Send 'age' to the API
+            body: JSON.stringify({ topic, language, age }),
         });
 
         if (!response.ok) {
@@ -72,11 +75,14 @@ async function generateAndDisplayContent(topic, language, token) {
     }
 }
 
-// --- DOM Population ---
+// ... (Rest of your file: populatePage, setupTabInteractions, handlePdfDownload, etc. remains exactly the same) ...
+// Copy the rest of the functions from your previous file starting from "function populatePage" downwards.
+// OR just paste the logic above into the top of your existing file.
+
+// --- Helper for PDF Download (Ensure this is in your file) ---
 function populatePage(lessonPlan, imageUrl, topic) {
     const mainContent = document.getElementById('main-content');
 
-    // NEW: Dropdown for PDF Options
     const headerHtml = `
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b border-gray-700">
             <div>
@@ -101,7 +107,6 @@ function populatePage(lessonPlan, imageUrl, topic) {
         </div>
     `;
     
-    // Build content tabs (unchanged)
     for (const tabKey in lessonPlan) {
         if (tabKey === 'imagePrompt') continue;
 
@@ -142,9 +147,7 @@ function populatePage(lessonPlan, imageUrl, topic) {
             tabContentContainer.innerHTML = headerHtml + tagsHtml + contentHtml;
         }
     }
-    
     setupActionButtons();
-
     mainContent.style.display = 'block';
     loader.style.display = 'none';
 }
@@ -167,7 +170,6 @@ function setupTabInteractions() {
 }
 
 function setupActionButtons() {
-    // NEW: Two specific PDF listeners
     document.getElementById('pdf-text-only')?.addEventListener('click', () => handlePdfDownload(false));
     document.getElementById('pdf-with-images')?.addEventListener('click', () => handlePdfDownload(true));
 
@@ -189,7 +191,6 @@ function setupActionButtons() {
     });
 }
 
-// --- NEW PDF LOGIC: Supports Images ---
 async function handlePdfDownload(includeImages) {
     if (!currentLessonData) return alert('Lesson data not available.');
     
@@ -200,7 +201,6 @@ async function handlePdfDownload(includeImages) {
     const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
     const pageHeight = doc.internal.pageSize.getHeight();
 
-    // Helper: Add Text with Auto-Paging
     const addText = (text, size, weight) => {
         doc.setFontSize(size).setFont(undefined, weight);
         const splitText = doc.splitTextToSize(text, maxWidth);
@@ -214,20 +214,17 @@ async function handlePdfDownload(includeImages) {
         y += textHeight + 4;
     };
 
-    // 1. Title
     addText(`Topic: ${currentTopic}`, 20, 'bold');
     y += 5;
 
-    // 2. Text Content Loop
     for (const tabKey in currentLessonData) {
         if (tabKey === 'imagePrompt') continue;
         const tabTitle = tabKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         
-        // Tab Header
         if (y + 10 > pageHeight - margin) { doc.addPage(); y = 15; }
         y += 2;
         doc.setDrawColor(150); 
-        doc.line(margin, y, margin + maxWidth, y); // Separator line
+        doc.line(margin, y, margin + maxWidth, y); 
         y += 7;
         
         addText(tabTitle, 16, 'bold');
@@ -247,9 +244,7 @@ async function handlePdfDownload(includeImages) {
         y += 5;
     }
 
-    // 3. Image Gallery (If Selected)
     if (includeImages) {
-        // Find all visible, generated images in the gallery
         const visibleImages = Array.from(document.querySelectorAll('#image-gallery-grid img'))
             .filter(img => !img.classList.contains('hidden') && img.src);
         
@@ -261,11 +256,8 @@ async function handlePdfDownload(includeImages) {
 
             for (const img of visibleImages) {
                 try {
-                    // Convert image to Base64 to ensure it embeds correctly
                     const base64Img = await getBase64FromImage(img);
                     const imgProps = doc.getImageProperties(base64Img);
-                    
-                    // Calculate scaling to fit page width
                     const imgWidth = maxWidth; 
                     const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
 
@@ -275,30 +267,24 @@ async function handlePdfDownload(includeImages) {
                     }
 
                     doc.addImage(base64Img, 'JPEG', margin, y, imgWidth, imgHeight);
-                    
-                    // Optional: Add caption based on alt text
                     y += imgHeight + 5;
                     if (img.alt) {
                         doc.setFontSize(10).setFont(undefined, 'italic');
                         doc.text(img.alt, margin, y);
                         y += 8;
                     }
-                    y += 5; // Spacing between images
+                    y += 5; 
 
                 } catch (err) {
                     console.error("Could not add image to PDF", err);
                 }
             }
-        } else {
-            // Optional: Tell user no images were generated
-            // alert("No visual gallery images have been generated yet.");
         }
     }
 
     doc.save(`${currentTopic}_Plan.pdf`);
 }
 
-// Helper to convert <img> element to Base64
 function getBase64FromImage(imgElement) {
     return new Promise((resolve, reject) => {
         const canvas = document.createElement("canvas");
@@ -347,7 +333,6 @@ async function handleShareToHub(event) {
     }
 }
 
-// --- VISUAL GALLERY LOGIC ---
 function setupImageTab(topic, lessonPlan) {
     const galleryContainer = document.getElementById('image-gallery-grid');
     if (!galleryContainer) return;

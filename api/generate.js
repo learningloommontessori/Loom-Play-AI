@@ -13,52 +13,42 @@ export default async function handler(request) {
   }
 
   try {
-    // --- 1. GET DATA (Including Age) ---
-    // ** THE FIX **: Extract 'age' from the request body
-    const { topic, language, age } = await request.json(); 
+    // 1. GET DATA (NOW INCLUDES AGE)
+    const { topic, language, age } = await request.json(); // <--- Retrieving age
     
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.split(' ')[1];
 
-    if (!token) {
-        return new Response(JSON.stringify({ error: 'Authentication token is required.' }), { status: 401 });
-    }
+    if (!token) return new Response(JSON.stringify({ error: 'Token required' }), { status: 401 });
     
-    // Auth Check
     const supabaseUserClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
     const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
 
-    if (userError || !user) {
-        return new Response(JSON.stringify({ error: 'Invalid or expired user session.' }), { status: 401 });
-    }
+    if (userError || !user) return new Response(JSON.stringify({ error: 'Invalid user' }), { status: 401 });
 
-    // --- 2. GENERATE LESSON PLAN ---
     const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!topic || !geminiApiKey) {
-        return new Response(JSON.stringify({ error: 'Topic and API Key are required.' }), { status: 400 });
-    }
+    if (!topic || !geminiApiKey) return new Response(JSON.stringify({ error: 'Topic required' }), { status: 400 });
     
-    // ** THE FIX **: Dynamic Prompt based on Age Group
+    // 2. DYNAMIC SYSTEM PROMPT
     const systemPrompt = `You are KinderSpark AI, an expert assistant for kindergarten teachers.
     
     Topic: "${topic}"
     Target Audience: ${age || "Children aged 3-6"} 
     Language: Write strictly in ${language}.
 
-    CRITICAL INSTRUCTION: Adapt the complexity, vocabulary, and activities specifically for the "${age}" level.
-    - If "Nursery": Focus on sensory exploration, gross motor skills, very simple language, and repetition.
-    - If "Juniors": Balance sensory play with early cognitive concepts (patterns, sorting).
-    - If "Seniors": Include more complex questions, early math/reading readiness, and multi-step activities.
+    CRITICAL INSTRUCTION: Adapt all content for the "${age}" level.
+    - Nursery (4-5): Simple words, sensory focus, gross motor.
+    - Juniors (5-6): Patterns, sorting, early concepts.
+    - Seniors (6-7): Abstract concepts, early math/reading, complex questions.
 
-    Your response MUST be ONLY a valid, complete JSON object. Do NOT use markdown.
-    The JSON object must follow this exact structure:
+    Your response MUST be ONLY a valid, complete JSON object.
     {"newlyCreatedContent":{"originalRhyme": "...", "originalMiniStory": "..."},"newActivities":{"artCraftActivity": "...", "motorSkillsActivity": "...", "sensoryExplorationActivity": "..."},"movementAndMusic":{"grossMotorActivity": "...", "fineMotorActivity": "...", "actionSong": "..."},"socialAndEmotionalLearning":{"graceAndCourtesy": "...", "problemSolvingScenario": "..."},"classicResources":{"familiarRhymesAndSongs": ["..."], "classicStoryBooks": ["..."]},"montessoriConnections":{"traditionalUseOfMaterials": "...", "newWaysToUseMaterials": "..."},"teacherResources":{"observationCues": "...", "environmentSetup": "..."}}`;
     
     const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
     const textPayload = {
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ parts: [{ text: `Generate a Montessori lesson plan for: ${topic}` }] }],
-        generationConfig: { responseMimeType: "application/json", temperature: 0.8, maxOutputTokens: 8192 },
+        generationConfig: { responseMimeType: "application/json", temperature: 0.8 },
     };
     
     const textApiResponse = await fetch(textApiUrl, {
@@ -67,20 +57,13 @@ export default async function handler(request) {
         body: JSON.stringify(textPayload),
     });
 
-    if (!textApiResponse.ok) {
-        throw new Error('Failed to generate lesson plan from AI.');
-    }
+    if (!textApiResponse.ok) throw new Error('AI generation failed.');
     
     const textData = await textApiResponse.json();
     const generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!generatedText) {
-        throw new Error('AI returned an empty text response.');
-    }
-    
     const lessonPlan = JSON.parse(generatedText.replace(/```json/g, '').replace(/```/g, '').trim());
 
-    // --- 3. SAVE TO DATABASE ---
+    // 3. SAVE TO DATABASE (NOW INCLUDES AGE)
     const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
     
     const { error: dbError } = await supabaseAdmin
@@ -90,26 +73,15 @@ export default async function handler(request) {
           topic: topic,
           content_json: lessonPlan,
           language: language,
-	  age: age
-          // Note: We are not saving 'age' column to DB yet to avoid breaking schema, 
-          // but the content itself is now adapted!
+          age: age // <--- SAVING AGE
       }]);
 
-    if (dbError) {
-        console.error('Supabase DB Insert Error:', dbError);
-        throw new Error(`Supabase error: ${dbError.message}`);
-    }
+    if (dbError) throw new Error(`Supabase error: ${dbError.message}`);
     
-    return new Response(JSON.stringify({ lessonPlan }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ lessonPlan }), { status: 200 });
 
   } catch (error) {
-    console.error('Error in generate handler:', error);
-    return new Response(JSON.stringify({ error: error.message || 'An internal server error occurred.' }), { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('Error:', error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
