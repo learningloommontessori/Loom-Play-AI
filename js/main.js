@@ -153,7 +153,7 @@ async function handlePageAuth() {
         });
     }
 
-   // --- 4. SIGN UP (Now with Mobile Verification) ---
+   // --- 4. SIGN UP (With Unique ID Check) ---
     const signUpForm = document.getElementById('signUpForm');
     if (signUpForm) {
         signUpForm.addEventListener('submit', async (e) => {
@@ -162,21 +162,20 @@ async function handlePageAuth() {
             const email = signUpForm.email.value.trim().toLowerCase();
             const password = signUpForm.password.value;
             const fullName = signUpForm['full-name'].value;
-            const mobile = signUpForm.mobile.value.trim(); // <--- Get Mobile
+            // Get the Unique ID
+            const employeeId = document.getElementById('employee-id').value.trim().toUpperCase();
 
             setLoadingState(signUpForm, true);
 
-            // A. PRE-CHECK: Does this mobile number already exist?
-            // We only check against non-admin users to maintain the "Except Admin" rule
-            const { data: existingUser, error: checkError } = await supabase
+            // A. CHECK UNIQUE ID
+            const { data: existingUser } = await supabase
                 .from('profiles')
                 .select('id')
-                .eq('mobile', mobile)
-                .eq('is_admin', false) // Only block if another regular user has it
+                .eq('employee_id', employeeId)
                 .single();
 
             if (existingUser) {
-                showMessage('error', 'This mobile number is already registered. Please sign in.');
+                showMessage('error', 'This ID is already registered to another account.');
                 setLoadingState(signUpForm, false);
                 return;
             }
@@ -186,7 +185,7 @@ async function handlePageAuth() {
                 email,
                 password,
                 options: {
-                    data: { full_name: fullName, mobile: mobile }, // Store in metadata too
+                    data: { full_name: fullName, employee_id: employeeId },
                     emailRedirectTo: `${window.location.origin}/dashboard.html`
                 }
             });
@@ -194,7 +193,7 @@ async function handlePageAuth() {
             if (error) {
                 showMessage('error', error.message);
             } else {
-                // C. Create Profile with Mobile
+                // C. Create Profile
                 if (data.user) {
                     const { error: profileError } = await supabase
                         .from('profiles')
@@ -202,23 +201,19 @@ async function handlePageAuth() {
                             id: data.user.id, 
                             email: email, 
                             full_name: fullName,
-                            mobile: mobile,     // <--- Save Mobile
+                            employee_id: employeeId, // <--- Saving Unique ID
                             is_approved: false, 
                             is_admin: false
                         }]);
                     
-                    if(profileError) {
-                        console.error("Profile error:", profileError);
-                        // Handle duplicate error from DB just in case race condition
-                        if (profileError.code === '23505') { // Unique violation code
-                            showMessage('error', 'This mobile number is already in use.');
-                            setLoadingState(signUpForm, false);
-                            return;
-                        }
+                    if(profileError && profileError.code === '23505') {
+                        showMessage('error', 'This ID is already in use.');
+                        setLoadingState(signUpForm, false);
+                        return;
                     }
                 }
 
-                showMessage('success', 'Account created! Please wait for Admin approval before logging in.');
+                showMessage('success', 'Account created! Please wait for Admin approval.');
                 signUpForm.reset();
                 const submitButton = signUpForm.querySelector('button[type="submit"]');
                 if(submitButton) submitButton.disabled = true;
