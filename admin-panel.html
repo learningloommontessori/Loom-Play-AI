@@ -47,11 +47,11 @@
     <script type="module">
         import getSupabase from './js/supabaseClient.js';
         
-        // ** ADMIN CONFIGURATION (Must match main.js) **
+        // ** ADMIN CONFIGURATION (Updated to match main.js) **
         const ADMIN_EMAILS = [
             "monika.pathak@choithramschool.com",
-            "second.admin@school.com",
-            "third.admin@school.com"
+            "vip.pathak.ai@gmail.com", 
+            "learningloom.montessori@gmail.com"
         ];
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -59,6 +59,12 @@
             
             // 1. Verify Admin
             const { data: { session } } = await supabase.auth.getSession();
+            
+            // Debugging: Log the user attempting to access
+            if (session) {
+                console.log("Logged in as:", session.user.email);
+            }
+
             if (!session || !ADMIN_EMAILS.includes(session.user.email)) {
                 alert("Unauthorized Access.");
                 window.location.href = '/index.html';
@@ -128,6 +134,7 @@
             listContainer.innerHTML = html;
         }
 
+        // Attach toggle function to window so onclick works
         window.toggleUser = async (userId, newStatus) => {
             const supabase = await getSupabase();
             if(!confirm(newStatus ? "Grant access?" : "Revoke access?")) return;
