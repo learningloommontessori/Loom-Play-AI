@@ -1,21 +1,19 @@
 // js/collective-loom.js
 import getSupabase from './supabaseClient.js';
 let supabase;
-let currentUserId; // Variable to hold the current user's ID
+let currentUserId;
 
 document.addEventListener('DOMContentLoaded', async () => {
     supabase = await getSupabase();
-    // 1. Authentication & User Info
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) {
         window.location.href = '/sign-in.html';
         return;
     }
     const user = session.user;
-    currentUserId = user.id; // Store the current user's ID
+    currentUserId = user.id;
     const userName = user.user_metadata?.full_name || user.email;
 
-    // Setup header
     const welcomeMessage = document.getElementById('welcome-message');
     if (welcomeMessage) {
         welcomeMessage.textContent = `Welcome, ${userName.split(' ')[0]}!`;
@@ -30,15 +28,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // 2. Fetch and display community posts
     fetchAndDisplayPosts();
 
-    // 3. Setup real-time search functionality
-    // 3. Setup Filter & Search
     const searchInput = document.getElementById('search-input');
     const ageFilter = document.getElementById('age-filter');
 
-    // Helper function to get values from BOTH inputs
     const runFilters = () => {
         const searchText = searchInput ? searchInput.value : '';
         const ageValue = ageFilter ? ageFilter.value : 'all';
@@ -48,7 +42,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(searchInput) searchInput.addEventListener('input', runFilters);
     if(ageFilter) ageFilter.addEventListener('change', runFilters);
     
-    // Setup listeners for the new modal
     setupModalListeners();
 });
 
@@ -93,8 +86,18 @@ function createPostCard(post) {
         month: 'short', day: 'numeric', year: 'numeric'
     });
     
-    // Default to 'General' if the post is old and has no age data
     const ageGroup = post.age || 'General';
+
+    // ** THE FIX: SPLIT CATEGORIES INTO MULTIPLE TAGS **
+    // If post.category is "Rhyme,Activity", split it. If just "Rhyme", it's an array of 1.
+    const categories = post.category ? post.category.split(',') : ['General'];
+    
+    // Generate HTML for each tag side-by-side
+    const categoryTags = categories.map(cat => `
+        <span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-500/30">
+            ${cat.trim()}
+        </span>
+    `).join('');
 
     let actionButtons = `
         <button class="view-btn text-purple-400 hover:text-purple-300 text-sm font-semibold flex items-center" data-post-id="${post.post_id}">
@@ -113,15 +116,15 @@ function createPostCard(post) {
     return `
         <div class="community-card bg-black/30 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden flex flex-col justify-between p-6 hover:border-purple-500 border border-transparent transition-all duration-300" data-age="${ageGroup}">
             <div>
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="inline-block bg-purple-600/50 text-purple-200 text-xs font-medium px-2.5 py-1 rounded-full border border-purple-500/30">
-                        ${post.category}
-                    </span>
+                <div class="flex flex-wrap items-center gap-2 mb-3">
+                    ${categoryTags}
                     <span class="inline-block bg-blue-900/50 text-blue-200 text-xs font-medium px-2.5 py-1 rounded-full border border-blue-500/30 flex items-center">
                         <span class="material-symbols-outlined text-[10px] mr-1">school</span>${ageGroup}
                     </span>
                 </div>
+                
                 <h3 class="text-lg font-bold text-white mb-2 line-clamp-1">From: ${post.topic}</h3>
+                
                 <div class="text-gray-300 text-sm space-y-2 prose prose-invert prose-sm max-w-none line-clamp-4 relative">
                     ${post.content}
                     <div class="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-gray-900/10 to-transparent"></div>
@@ -209,24 +212,20 @@ function setupModalListeners() {
 
 function filterPosts(searchTerm, ageFilter) {
     const term = searchTerm.toLowerCase();
-    const selectedAge = ageFilter.toLowerCase(); // 'all', 'nursery', etc.
+    const selectedAge = ageFilter.toLowerCase(); 
 
     const cards = document.querySelectorAll('.community-card');
     let visibleCount = 0;
 
     cards.forEach(card => {
-        // Text Match
         const title = card.querySelector('h3').textContent.toLowerCase();
         const content = card.querySelector('.prose').textContent.toLowerCase();
         const authorElement = card.querySelector('.font-medium.text-purple-300');
         const authorName = authorElement ? authorElement.textContent.toLowerCase() : '';
         const isTextMatch = title.includes(term) || content.includes(term) || authorName.includes(term);
-
-        // Age Match
-        const cardAge = card.dataset.age.toLowerCase(); // We added data-age to the card HTML above
+        const cardAge = card.dataset.age.toLowerCase(); 
         const isAgeMatch = (selectedAge === 'all') || cardAge.includes(selectedAge);
 
-        // Final Decision
         if (isTextMatch && isAgeMatch) {
             card.style.display = 'flex';
             visibleCount++;
@@ -235,7 +234,6 @@ function filterPosts(searchTerm, ageFilter) {
         }
     });
 
-    // Empty State Logic
     const emptyState = document.getElementById('empty-state');
     const grid = document.getElementById('community-grid');
     
