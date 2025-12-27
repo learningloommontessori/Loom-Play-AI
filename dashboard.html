@@ -12,6 +12,29 @@
         body {
             font-family: 'Roboto', sans-serif;
         }
+/* --- Modern Glassmorphism --- */
+.glass-card {
+    background: rgba(255, 255, 255, 0.03); /* Extremely subtle transparency */
+    backdrop-filter: blur(16px);           /* Heavy frosted glass effect */
+    -webkit-backdrop-filter: blur(16px);   /* Safari support */
+    border: 1px solid rgba(255, 255, 255, 0.08); /* Thin, crisp border */
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Deep shadow for depth */
+    transition: all 0.3s ease;             /* Smooth hover animation */
+}
+
+.glass-card:hover {
+    background: rgba(255, 255, 255, 0.08); /* Slightly brighter on hover */
+    transform: translateY(-4px);           /* Float up effect */
+    border-color: rgba(255, 255, 255, 0.2); /* Brighter border */
+    box-shadow: 0 12px 40px 0 rgba(139, 92, 246, 0.15); /* Purple glow on hover */
+}
+/* Add this below your existing .glass-card styles */
+@keyframes shine {
+    100% { transform: translateX(100%); }
+}
+.animate-shine {
+    animation: shine 0.7s;
+}
     </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -70,14 +93,50 @@
             <div class="max-w-7xl w-full">
                 <h2 class="text-4xl sm:text-5xl font-extrabold leading-tight mb-12" id="user-name-main">Welcome, User</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center" href="/new-chat.html"><span class="material-symbols-outlined text-5xl mb-4">auto_stories</span>Weave a New Lesson</a>
-                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center" href="/History.html"><span class="material-symbols-outlined text-5xl mb-4">history</span>Threads of the Past</a>
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">event_note</span>Lesson Planner<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">quiz</span>Assessment Generator<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">edit_document</span>Worksheet Creator<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
-                    <div class="relative bg-purple-600/50 backdrop-blur-sm text-white font-bold py-10 px-6 rounded-lg text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed"><span class="material-symbols-outlined text-5xl mb-4">calendar_view_week</span>Weekly Planner<span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span></div>
-                    <a class="bg-purple-600/70 backdrop-blur-sm hover:bg-purple-700/80 text-white font-bold py-10 px-6 rounded-lg text-xl transition duration-300 flex flex-col items-center justify-center col-span-1 md:col-span-2 lg:col-span-1 xl:col-span-2" href="/collective-loom.html"><span class="material-symbols-outlined text-5xl mb-4">groups</span>The Collective Loom</a>
-                </div>
+    
+    <a class="glass-card group relative overflow-hidden text-white font-bold py-10 px-6 rounded-2xl text-xl flex flex-col items-center justify-center" href="/new-chat.html">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shine z-0 pointer-events-none"></div>
+        <span class="material-symbols-outlined text-5xl mb-4 relative z-10">auto_stories</span>
+        <span class="relative z-10">Weave a New Lesson</span>
+    </a>
+
+    <a class="glass-card group relative overflow-hidden text-white font-bold py-10 px-6 rounded-2xl text-xl flex flex-col items-center justify-center" href="/History.html">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shine z-0 pointer-events-none"></div>
+        <span class="material-symbols-outlined text-5xl mb-4 relative z-10">history</span>
+        <span class="relative z-10">Threads of the Past</span>
+    </a>
+
+    <div class="glass-card relative overflow-hidden text-white font-bold py-10 px-6 rounded-2xl text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
+        <span class="material-symbols-outlined text-5xl mb-4">event_note</span>
+        Lesson Planner
+        <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span>
+    </div>
+
+    <div class="glass-card relative overflow-hidden text-white font-bold py-10 px-6 rounded-2xl text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
+        <span class="material-symbols-outlined text-5xl mb-4">quiz</span>
+        Assessment Generator
+        <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span>
+    </div>
+
+    <div class="glass-card relative overflow-hidden text-white font-bold py-10 px-6 rounded-2xl text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
+        <span class="material-symbols-outlined text-5xl mb-4">edit_document</span>
+        Worksheet Creator
+        <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span>
+    </div>
+
+    <div class="glass-card relative overflow-hidden text-white font-bold py-10 px-6 rounded-2xl text-xl flex flex-col items-center justify-center opacity-60 cursor-not-allowed">
+        <span class="material-symbols-outlined text-5xl mb-4">calendar_view_week</span>
+        Weekly Planner
+        <span class="absolute bottom-4 text-xs font-bold bg-yellow-400 text-gray-900 px-2 py-1 rounded-full">Coming Soon</span>
+    </div>
+
+    <a class="glass-card group relative overflow-hidden text-white font-bold py-10 px-6 rounded-2xl text-xl flex flex-col items-center justify-center col-span-1 md:col-span-2 lg:col-span-1 xl:col-span-2" href="/collective-loom.html">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shine z-0 pointer-events-none"></div>
+        <span class="material-symbols-outlined text-5xl mb-4 relative z-10">groups</span>
+        <span class="relative z-10">The Collective Loom</span>
+    </a>
+
+</div>
             </div>
         </main>
         <footer class="absolute bottom-0 right-0 w-full text-right py-4 px-4 sm:px-6 lg:px-8">
