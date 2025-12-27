@@ -39,10 +39,7 @@
 </head>
 <body class="bg-gray-900 text-white">
     <div class="relative min-h-screen">
-        <div class="absolute inset-0">
-            <img alt="Abstract purple and blue waves on a black background" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAZu9QWRIEFnKKG6SMF74gPyyMfKcVyImI8TeqE1aWnAEy17Z3Ob2KGfLCIeZhHwB3m8sldZ1JAvfz-y5wpsgDaZBSRb6S0wGB7p4XJL3VQ2JsWLB9gz3iT3yeNwq-tNnZaFJxCUbLxoqWIsjBrpFCc0ZdkKon35yRcmiw-mgn98WRAe4u-dsImTEuWVOqThZVmtgidaXz8oNaw_j2UG7odXaYWTgDIAYkh0fnLndUDkSH7Ho0BSd03oOllL7bpSfju2Yxnxa_HiMs" />
-            <div class="absolute inset-0 bg-black opacity-50"></div>
-        </div>
+       <div id="vanta-bg" class="fixed inset-0 z-0"></div>
         <header class="relative z-10 px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
                 <!-- Main Navigation Menu -->
@@ -144,5 +141,30 @@
         </footer>
     </div>
     <script type="module" src="/js/dashboard.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    VANTA.NET({
+        el: "#vanta-bg",
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.00,
+        minWidth: 200.00,
+        scale: 1.00,
+        scaleMobile: 1.00,
+        color: 0xa855f7,       /* Purple-500 (Matches your theme) */
+        backgroundColor: 0x111827, /* Gray-900 (Matches your dark mode) */
+        points: 10.00,         /* Amount of stars */
+        maxDistance: 22.00,    /* How far lines connect */
+        spacing: 18.00         /* Density of the net */
+    })
+});
+</script>
+
 </body>
 </html>
