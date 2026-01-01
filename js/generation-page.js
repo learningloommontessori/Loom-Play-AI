@@ -173,6 +173,7 @@ function populatePage(lessonPlan, imageUrl, topic) {
 }
 
 // --- REGENERATION LOGIC ---
+// --- REGENERATION LOGIC ---
 window.regenerateSection = async function(sectionId, sectionTitle) {
     const contentDiv = document.getElementById(`text-${sectionId}`);
     const loader = document.getElementById(`loader-${sectionId}`);
@@ -184,13 +185,9 @@ window.regenerateSection = async function(sectionId, sectionTitle) {
         const repairPrompt = `
             Context: You are an expert Montessori assistant.
             Task: REWRITE ONLY the specific section "${sectionTitle}" for the lesson topic: "${currentTopic}".
-            Constraint: Provide ONLY the new content. Do NOT include title headers. Keep formatting clean.
+            Constraint: Return the response as a simple markdown string. Do not wrap in JSON.
         `;
 
-        // CALL API
-        // NOTE: We reuse /api/generate but pass a custom 'prompt' override if your backend supports it.
-        // If not, you might need to create a specific endpoint. 
-        // Here assuming your backend accepts a 'customPrompt' field:
         const response = await fetch('/api/generate', { 
             method: 'POST',
             headers: { 
@@ -198,28 +195,45 @@ window.regenerateSection = async function(sectionId, sectionTitle) {
                 'Authorization': `Bearer ${currentUserSession.access_token}`
             },
             body: JSON.stringify({ 
-                topic: currentTopic, // Context
-                customPrompt: repairPrompt, // The instruction
-                mode: 'regenerate_section' // Flag for backend to handle simple text return
+                topic: currentTopic, 
+                customPrompt: repairPrompt, 
+                mode: 'regenerate_section'
             })
         });
 
         if (!response.ok) throw new Error("Regeneration failed");
 
-        // Assuming backend returns { generatedText: "..." } for regeneration mode
         const data = await response.json();
         
-        // Handle response (Using 'marked' if available, else plain text)
-        const newText = data.generatedText || data.lessonPlan || "Content updated."; 
+        // --- THE FIX IS HERE ---
+        // 1. Try to find the text string in common fields
+        let rawText = data.generatedText || data.lessonPlan || data.content || "";
+
+        // 2. If it's still an Object (JSON), try to extract the first value or stringify it
+        if (typeof rawText === 'object' && rawText !== null) {
+            // Check if the specific section key exists (e.g., data.lessonPlan.activity)
+            // We try to find a key that matches parts of the sectionId (e.g. "newActivities-sensoryBin" -> "sensoryBin")
+            const keys = Object.keys(rawText);
+            if (keys.length > 0) {
+                 // Just take the first available string value
+                rawText = rawText[keys[0]];
+            } else {
+                // Fallback: convert entire object to string so it doesn't crash
+                rawText = JSON.stringify(rawText); 
+            }
+        }
+
+        // 3. Final safety check: Ensure it is a string
+        const finalContent = String(rawText);
 
         // Fade Transition
         contentDiv.style.opacity = '0';
         setTimeout(() => {
-            // Check if 'marked' library is loaded for Markdown support
             if (typeof marked !== 'undefined') {
-                contentDiv.innerHTML = marked.parse(newText);
+                // Now safely passes a string to marked()
+                contentDiv.innerHTML = marked.parse(finalContent);
             } else {
-                contentDiv.innerHTML = newText.replace(/\n/g, '<br>');
+                contentDiv.innerHTML = finalContent.replace(/\n/g, '<br>');
             }
             contentDiv.style.opacity = '1';
         }, 300);
@@ -231,7 +245,6 @@ window.regenerateSection = async function(sectionId, sectionTitle) {
         loader.classList.add('hidden');
     }
 };
-
 // ... (Rest of your original functions: setupTabInteractions, setupActionButtons, etc.) ...
 // Paste the rest of your original file here (functions setupTabInteractions, handlePdfDownload, setupImageTab, etc.)
 
