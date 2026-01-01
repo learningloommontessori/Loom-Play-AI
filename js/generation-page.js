@@ -173,7 +173,7 @@ function populatePage(lessonPlan, imageUrl, topic) {
 }
 
 // --- REGENERATION LOGIC ---
-// --- REGENERATION LOGIC ---
+// --- REGENERATION LOGIC (FIXED) ---
 window.regenerateSection = async function(sectionId, sectionTitle) {
     const contentDiv = document.getElementById(`text-${sectionId}`);
     const loader = document.getElementById(`loader-${sectionId}`);
@@ -185,7 +185,7 @@ window.regenerateSection = async function(sectionId, sectionTitle) {
         const repairPrompt = `
             Context: You are an expert Montessori assistant.
             Task: REWRITE ONLY the specific section "${sectionTitle}" for the lesson topic: "${currentTopic}".
-            Constraint: Return the response as a simple markdown string. Do not wrap in JSON.
+            Constraint: Return the response as a plain text string. Do NOT use JSON. Do NOT include the title.
         `;
 
         const response = await fetch('/api/generate', { 
@@ -205,32 +205,47 @@ window.regenerateSection = async function(sectionId, sectionTitle) {
 
         const data = await response.json();
         
-        // --- THE FIX IS HERE ---
-        // 1. Try to find the text string in common fields
-        let rawText = data.generatedText || data.lessonPlan || data.content || "";
+        // --- FIX STARTS HERE ---
+        // 1. Determine what 'data' is. It might be { generatedText: "..." } or { lessonPlan: { ... } }
+        let rawText = "";
 
-        // 2. If it's still an Object (JSON), try to extract the first value or stringify it
-        if (typeof rawText === 'object' && rawText !== null) {
-            // Check if the specific section key exists (e.g., data.lessonPlan.activity)
-            // We try to find a key that matches parts of the sectionId (e.g. "newActivities-sensoryBin" -> "sensoryBin")
-            const keys = Object.keys(rawText);
-            if (keys.length > 0) {
-                 // Just take the first available string value
-                rawText = rawText[keys[0]];
+        if (data.generatedText) {
+            rawText = data.generatedText;
+        } else if (data.lessonPlan) {
+            // If the API returned a whole object, try to grab the text for THIS section
+            // or just stringify the whole thing if we can't find a specific match
+            if (typeof data.lessonPlan === 'object') {
+                // Try to find a matching key (simple heuristic)
+                const keys = Object.keys(data.lessonPlan);
+                const matchingKey = keys.find(k => sectionId.toLowerCase().includes(k.toLowerCase()));
+                
+                if (matchingKey && data.lessonPlan[matchingKey]) {
+                    rawText = data.lessonPlan[matchingKey];
+                } else {
+                    // Fallback: If we can't find the exact key, dump the first value or the whole object
+                    const firstValue = Object.values(data.lessonPlan)[0];
+                    rawText = typeof firstValue === 'string' ? firstValue : JSON.stringify(data.lessonPlan);
+                }
             } else {
-                // Fallback: convert entire object to string so it doesn't crash
-                rawText = JSON.stringify(rawText); 
+                rawText = data.lessonPlan;
             }
+        } else {
+            rawText = JSON.stringify(data); // Last resort fallback
         }
 
-        // 3. Final safety check: Ensure it is a string
+        // 2. EXTRA SAFETY: If rawText is STILL an object (e.g. nested JSON), force it to string
+        if (typeof rawText === 'object') {
+            rawText = JSON.stringify(rawText, null, 2); // Pretty print JSON so it's readable
+        }
+
+        // 3. Ensure it is a string for marked.js
         const finalContent = String(rawText);
+        // --- FIX ENDS HERE ---
 
         // Fade Transition
         contentDiv.style.opacity = '0';
         setTimeout(() => {
             if (typeof marked !== 'undefined') {
-                // Now safely passes a string to marked()
                 contentDiv.innerHTML = marked.parse(finalContent);
             } else {
                 contentDiv.innerHTML = finalContent.replace(/\n/g, '<br>');
