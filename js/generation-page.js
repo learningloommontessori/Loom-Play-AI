@@ -6,7 +6,7 @@ let currentUserSession;
 let currentLessonData = null; 
 let currentTopic = '';
 let currentLanguage = 'English'; 
-let currentAge = 'Nursery'; // Default Age
+let currentAge = 'Nursery'; 
 
 document.addEventListener('DOMContentLoaded', async () => {
     supabase = await getSupabase();
@@ -27,10 +27,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.location.href = '/index.html';
     });
     
-    // 1. Retrieve Data from LocalStorage
+    // Retrieve Data
     currentTopic = localStorage.getItem('currentTopic');
     currentLanguage = localStorage.getItem('generationLanguage') || 'English';
-    currentAge = localStorage.getItem('selectedAge') || 'Nursery'; // <--- RETRIEVE AGE
+    currentAge = localStorage.getItem('selectedAge') || 'Nursery';
 
     if (!currentTopic) {
         alert('No topic found. Redirecting to start a new lesson.');
@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     setupTabInteractions();
-    // 2. Pass 'currentAge' to the function
     generateAndDisplayContent(currentTopic, currentLanguage, currentAge, session.access_token);
 });
 
@@ -54,7 +53,6 @@ async function generateAndDisplayContent(topic, language, age, token) {
         const response = await fetch('/api/generate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            // 3. Send 'age' to the API
             body: JSON.stringify({ topic, language, age }),
         });
 
@@ -75,11 +73,7 @@ async function generateAndDisplayContent(topic, language, age, token) {
     }
 }
 
-// ... (Rest of your file: populatePage, setupTabInteractions, handlePdfDownload, etc. remains exactly the same) ...
-// Copy the rest of the functions from your previous file starting from "function populatePage" downwards.
-// OR just paste the logic above into the top of your existing file.
-
-// --- Helper for PDF Download (Ensure this is in your file) ---
+// --- MAIN UI POPULATION WITH SMART REFRESH ---
 function populatePage(lessonPlan, imageUrl, topic) {
     const mainContent = document.getElementById('main-content');
 
@@ -119,25 +113,51 @@ function populatePage(lessonPlan, imageUrl, topic) {
 
             for (const contentKey in tabData) {
                 const title = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                tagsHtml += `<button class="tag text-sm font-medium px-3 py-1 rounded-full cursor-pointer transition-colors duration-200 bg-purple-800/50 text-purple-200 hover:bg-purple-700 ${isFirstTag ? 'active-tag' : ''}" data-content-id="${tabKey}-${contentKey}">${title}</button>`;
+                // Create unique ID for this specific section (e.g., "newActivities-sensoryBin")
+                const sectionUniqueId = `${tabKey}-${contentKey}`; 
                 
+                tagsHtml += `<button class="tag text-sm font-medium px-3 py-1 rounded-full cursor-pointer transition-colors duration-200 bg-purple-800/50 text-purple-200 hover:bg-purple-700 ${isFirstTag ? 'active-tag' : ''}" data-content-id="${sectionUniqueId}">${title}</button>`;
+                
+                // Format Body Content
                 let body = tabData[contentKey];
+                let formattedBody = '';
+                
                 if (tabKey === 'classicResources' && Array.isArray(body)) {
-                    body = `<ul class="list-disc list-inside space-y-2">${body.map(item => {
+                    formattedBody = `<ul class="list-disc list-inside space-y-2">${body.map(item => {
                         const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(item)}`;
                         return `<li><a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="text-purple-400 hover:underline">${item}</a></li>`;
                     }).join('')}</ul>`;
                 } else if (Array.isArray(body)) {
-                    body = `<ul class="list-disc list-inside space-y-2">${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                    formattedBody = `<ul class="list-disc list-inside space-y-2">${body.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                } else {
+                    formattedBody = body.replace(/\n/g, '<br>');
                 }
 
+                // --- SMART REFRESH CARD STRUCTURE ---
                 contentHtml += `
-                    <div id="${tabKey}-${contentKey}" class="tag-content ${isFirstTag ? 'active-tag-content' : ''}">
-                        <div class="prose prose-invert max-w-none text-gray-300">${body.replace(/\n/g, '<br>')}</div>
+                    <div id="${sectionUniqueId}" class="tag-content ${isFirstTag ? 'active-tag-content' : ''} relative group">
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                             <h3 class="text-xl font-bold text-white">${title}</h3>
+                             <button onclick="window.regenerateSection('${sectionUniqueId}', '${title}')" 
+                                    class="text-gray-400 hover:text-purple-400 transition-colors p-2 rounded-full hover:bg-white/10"
+                                    title="Regenerate this section">
+                                <span class="material-symbols-outlined text-sm">refresh</span>
+                            </button>
+                        </div>
+
+                        <div id="text-${sectionUniqueId}" class="prose prose-invert max-w-none text-gray-300">
+                            ${formattedBody}
+                        </div>
+
                         <div class="mt-6 pt-4 border-t border-gray-700 text-right">
                             <button class="share-btn flex items-center text-sm bg-transparent hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500 font-medium py-2 px-3 rounded-md transition-colors duration-200" data-category="${title}">
                                 <span class="material-symbols-outlined mr-2">groups</span> Share to Hub
                             </button>
+                        </div>
+
+                        <div id="loader-${sectionUniqueId}" class="hidden absolute inset-0 bg-gray-900/90 backdrop-blur-sm rounded-lg z-20 flex flex-col items-center justify-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-2"></div>
+                            <p class="text-xs text-purple-300 animate-pulse">Refining your content...</p>
                         </div>
                     </div>
                 `;
@@ -151,6 +171,69 @@ function populatePage(lessonPlan, imageUrl, topic) {
     mainContent.style.display = 'block';
     loader.style.display = 'none';
 }
+
+// --- REGENERATION LOGIC ---
+window.regenerateSection = async function(sectionId, sectionTitle) {
+    const contentDiv = document.getElementById(`text-${sectionId}`);
+    const loader = document.getElementById(`loader-${sectionId}`);
+    
+    // Show Loader
+    loader.classList.remove('hidden');
+
+    try {
+        const repairPrompt = `
+            Context: You are an expert Montessori assistant.
+            Task: REWRITE ONLY the specific section "${sectionTitle}" for the lesson topic: "${currentTopic}".
+            Constraint: Provide ONLY the new content. Do NOT include title headers. Keep formatting clean.
+        `;
+
+        // CALL API
+        // NOTE: We reuse /api/generate but pass a custom 'prompt' override if your backend supports it.
+        // If not, you might need to create a specific endpoint. 
+        // Here assuming your backend accepts a 'customPrompt' field:
+        const response = await fetch('/api/generate', { 
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${currentUserSession.access_token}`
+            },
+            body: JSON.stringify({ 
+                topic: currentTopic, // Context
+                customPrompt: repairPrompt, // The instruction
+                mode: 'regenerate_section' // Flag for backend to handle simple text return
+            })
+        });
+
+        if (!response.ok) throw new Error("Regeneration failed");
+
+        // Assuming backend returns { generatedText: "..." } for regeneration mode
+        const data = await response.json();
+        
+        // Handle response (Using 'marked' if available, else plain text)
+        const newText = data.generatedText || data.lessonPlan || "Content updated."; 
+
+        // Fade Transition
+        contentDiv.style.opacity = '0';
+        setTimeout(() => {
+            // Check if 'marked' library is loaded for Markdown support
+            if (typeof marked !== 'undefined') {
+                contentDiv.innerHTML = marked.parse(newText);
+            } else {
+                contentDiv.innerHTML = newText.replace(/\n/g, '<br>');
+            }
+            contentDiv.style.opacity = '1';
+        }, 300);
+
+    } catch (error) {
+        console.error("Regeneration Error:", error);
+        alert("Could not regenerate section. Please try again.");
+    } finally {
+        loader.classList.add('hidden');
+    }
+};
+
+// ... (Rest of your original functions: setupTabInteractions, setupActionButtons, etc.) ...
+// Paste the rest of your original file here (functions setupTabInteractions, handlePdfDownload, setupImageTab, etc.)
 
 function setupTabInteractions() {
     const tabs = document.querySelectorAll('#tabs-navigation a');

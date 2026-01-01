@@ -36,29 +36,11 @@
     animation: shine 0.7s;
 }
 
-/* Animated Aurora Background */
-.aurora-bg {
-    background: linear-gradient(-45deg, #1f1c2c, #2a0845, #1e3a8a, #312e81);
-    background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0; /* Behind everything */
-}
-
-@keyframes gradientBG {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}   
 
  </style>
 </head>
 <body class="bg-gray-900 text-white">
-<div class="aurora-bg"></div>
+<div id="tsparticles" class="fixed inset-0 z-0"></div>
     <div class="relative min-h-screen">
                <header class="relative z-10 px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <div class="flex items-center space-x-4">
@@ -163,6 +145,39 @@
     <script type="module" src="/js/dashboard.js"></script>
 
 
-
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.0.6/tsparticles.slim.bundle.min.js"></script>
 </body>
+<script>
+    (async () => {
+        await tsParticles.load("tsparticles", {
+            background: { color: "#111827" }, // Gray-900
+            particles: {
+                number: { value: 60, density: { enable: true, area: 800 } },
+                color: { value: "#a855f7" }, // Purple-500
+                shape: { type: "circle" },
+                opacity: { value: 0.5 },
+                size: { value: 3 },
+                move: { enable: true, speed: 1.5, direction: "none", random: false, straight: false, outModes: "out" },
+                links: {
+                    enable: true,
+                    distance: 150,
+                    color: "#a855f7",
+                    opacity: 0.2,
+                    width: 1
+                }
+            },
+            interactivity: {
+                events: {
+                    onHover: { enable: true, mode: "grab" }, // Lines grab your mouse
+                    onClick: { enable: true, mode: "push" }  // Click adds particles
+                },
+                modes: {
+                    grab: { distance: 140, links: { opacity: 1 } },
+                    push: { quantity: 4 }
+                }
+            }
+        });
+    })();
+</script>
 </html>
+
