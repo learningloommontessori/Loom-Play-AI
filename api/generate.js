@@ -24,8 +24,8 @@ export default async function handler(req, res) {
     const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
     if (userError || !user) return res.status(401).json({ error: 'Invalid user' });
 
-    // 1. SWITCH TO GEMINI 2.0 FLASH (Better at complex JSON & Storytelling)
-    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+    // 1. SWITCH TO GEMINI 2.5 FLASH (Better at complex JSON & Storytelling)
+    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
     
     // 2. NEP 2020 ALIGNED PROMPT
     const systemPrompt = `You are "Loom Thread," an expert primary school curriculum designer (Grades 1-5) aligned with India's NEP 2020 policies.
