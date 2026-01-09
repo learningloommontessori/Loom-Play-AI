@@ -24,49 +24,66 @@ export default async function handler(req, res) {
     const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
     if (userError || !user) return res.status(401).json({ error: 'Invalid user' });
 
-    // CALL GEMINI (2.5 FLASH)
-    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    // 1. SWITCH TO GEMINI 2.0 FLASH (Better at complex JSON & Storytelling)
+    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
     
-    // UPDATED PROMPT FOR PRIMARY SCHOOL (CLASS 1-5) STRUCTURE
-    const systemPrompt = `You are "Loom Thread," an expert primary school curriculum designer (Grades 1-5). Create a highly engaging, structured lesson plan.
+    // 2. NEP 2020 ALIGNED PROMPT
+    const systemPrompt = `You are "Loom Thread," an expert primary school curriculum designer (Grades 1-5) aligned with India's NEP 2020 policies.
     Topic: "${topic}", Target Audience: "${age}" (approx 6-11 years old), Language: "${language}".
+
+    KEY PEDAGOGY GUIDELINES:
+    1. **Magic Box (Toy-Based Pedagogy):** For activities, assume the teacher ONLY has standard classroom items (Chalk, Duster, Tiffin Boxes, Water Bottles, School Bags, Pencils). Do NOT ask for bought materials.
+    2. **Bhasha Sangam:** Always provide local language context for difficult English terms.
+    3. **FLN Focus:** Include quick drills for Foundational Literacy and Numeracy.
 
     You MUST return ONLY valid JSON.
     THE JSON STRUCTURE MUST BE EXACTLY THIS:
     {
+      "imagePrompt": "A highly detailed, cute, 3D Pixar-style text description of a scene that best represents this lesson's 'Story Hook'. Describe the characters, colors, and lighting. Do NOT include text in the image.",
+
       "lessonStarters": {
         "storyHook": "A short, creative original story (approx 100 words) to introduce the topic.",
         "wonderQuestion": "A provocative 'Did you know?' or 'What if?' question to spark curiosity immediately.",
-        "realWorldConnection": "Explain how this topic connects to the child's daily life or home environment."
+        "realWorldConnection": "Explain how this topic connects to the child's daily life in an Indian context."
+      },
+      "magicBoxActivity": {
+        "activityName": "Name of the Toy-Based Activity",
+        "materialsUsed": "List ONLY standard classroom items used (e.g., Water Bottle, Chalk).",
+        "instructions": "Step-by-step guide to teaching the concept using these objects."
+      },
+      "bhashaSangam": {
+         "bridgeVocabulary": [
+            "List 3-5 key English terms from the lesson and their translation in ${language} (or Hindi) with a simple cultural analogy."
+         ]
+      },
+      "flnBoosters": {
+         "literacyDrill": "A 5-minute rapid-fire game to boost reading/vocabulary related to the topic (NIPUN Bharat).",
+         "numeracyDrill": "A 5-minute mental math activity connecting the topic to numbers."
       },
       "activeLearning": {
-        "handsOnExperiment": "A concrete, sensory-based activity using simple materials.",
         "groupGame": "A dynamic classroom game (charades, relay, etc.) that reinforces the concept.",
-        "artIntegration": "A drawing, craft, or model-making task related to the topic."
+        "artIntegration": "A drawing, craft, or model-making task related to the topic using waste material."
       },
       "teachingGuide": {
         "blackboardSummary": ["List of 3-5 key points exactly as they should be written on the board."],
-        "keyConceptAnalogies": "Simple comparisons to explain complex ideas (e.g., 'The heart is like a pump').",
         "misconceptionCheck": "Common mistakes students make with this topic and how to correct them."
       },
+      "holisticProgressCard": {
+         "observationRubric": [
+            "Create a qualitative rubric checklist. Example: 'Student participation: Rarely / Sometimes / Always'."
+         ]
+      },
       "practiceAndAssess": {
-        "worksheetIdeas": ["List 3 distinct ideas for worksheet questions (Fill in blanks, Match the following, etc)."],
-        "exitTickets": ["List 3 quick questions to ask at the door to check understanding before class ends."],
-        "homeConnect": "A fun, low-stress activity students can do at home with parents."
+        "worksheetIdeas": ["List 3 distinct ideas for worksheet questions (Fill in blanks, Match the following)."],
+        "exitTickets": ["List 3 quick questions to ask at the door."]
       },
       "inclusiveCorner": {
-        "remedialSupport": "Specific tips for helping students who are struggling or learning slowly.",
-        "challengeTasks": "Advanced 'Fast Finisher' questions or tasks for high-achieving students.",
-        "multilingualBridges": "Key vocabulary words translated or explained to help bridge language gaps."
-      },
-      "valuesAndSkills": { 
-        "valueOfTheDay": "A moral lesson or value (sharing, patience, teamwork) connected to this topic.", 
-        "criticalThinkingQs": ["List 2 open-ended questions with no single right answer to provoke deep thought."]
+        "remedialSupport": "Specific tips for helping students who are struggling.",
+        "challengeTasks": "Advanced tasks for high-achieving students."
       },
       "resourceHub": {
           "bookList": ["List 2-3 age-appropriate book titles."],
-          "educationalVideos": ["List 2-3 specific search terms for educational YouTube videos."],
-          "materialChecklist": ["List of all physical items needed for the activities above."]
+          "educationalVideos": ["List 2-3 specific search terms for educational YouTube videos."]
       }
     }`;
 

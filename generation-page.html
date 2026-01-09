@@ -146,6 +146,12 @@
                     
                     <div class="flex space-x-4">
                         
+                        <button 
+                            onclick="openPrintableWorksheet()" 
+                            class="pro-glass-btn flex items-center px-5 py-2.5 text-sm font-bold text-white hover:text-green-300 transition-colors border-green-500/30 bg-green-600/10">
+                            <span class="material-symbols-outlined mr-2">print</span> Print Worksheet
+                        </button>
+
                         <div x-data="{ open: false }" class="relative z-50">
                             <button 
                                 @click="open = !open" 
@@ -220,11 +226,25 @@
                         <a class="glass-tab active-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="lessonStarters" href="#">
                             <span class="material-symbols-outlined mr-3">auto_awesome</span>Lesson Starters
                         </a>
+                        
+                        <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="magicBoxActivity" href="#">
+                            <span class="material-symbols-outlined mr-3">inventory_2</span>Magic Box
+                        </a>
+                        <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="bhashaSangam" href="#">
+                            <span class="material-symbols-outlined mr-3">translate</span>Bhasha Sangam
+                        </a>
+                        <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="flnBoosters" href="#">
+                            <span class="material-symbols-outlined mr-3">rocket_launch</span>FLN Drills
+                        </a>
                         <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="activeLearning" href="#">
                             <span class="material-symbols-outlined mr-3">extension</span>Active Learning
                         </a>
                         <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="teachingGuide" href="#">
                             <span class="material-symbols-outlined mr-3">school</span>Teaching Guide
+                        </a>
+                        
+                        <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="holisticProgressCard" href="#">
+                            <span class="material-symbols-outlined mr-3">fact_check</span>Progress Card
                         </a>
                         <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="practiceAndAssess" href="#">
                             <span class="material-symbols-outlined mr-3">assignment_turned_in</span>Practice & Assess
@@ -236,7 +256,7 @@
                             <span class="material-symbols-outlined mr-3">psychology</span>Values & Skills
                         </a>
                         <a class="glass-tab whitespace-nowrap py-3 px-4 font-medium text-base flex items-center" data-tab="resourceHub" href="#">
-                            <span class="material-symbols-outlined mr-3">inventory_2</span>Resource Hub
+                            <span class="material-symbols-outlined mr-3">menu_book</span>Resource Hub
                         </a>
                     </nav>
                     
@@ -256,6 +276,15 @@
                             </div>
                         </div>
 
+                        <div id="magicBoxActivity-content" class="tab-content">
+                            <p class="p-4 text-gray-500">Loading Magic Box...</p>
+                        </div>
+                        <div id="bhashaSangam-content" class="tab-content">
+                            <p class="p-4 text-gray-500">Loading Translations...</p>
+                        </div>
+                        <div id="flnBoosters-content" class="tab-content">
+                            <p class="p-4 text-gray-500">Loading FLN Drills...</p>
+                        </div>
                         <div id="activeLearning-content" class="tab-content">
                             <p class="p-4 text-gray-500">Loading activities...</p>
                         </div>
@@ -264,6 +293,9 @@
                             <p class="p-4 text-gray-500">Loading teaching guide...</p>
                         </div>
 
+                        <div id="holisticProgressCard-content" class="tab-content">
+                            <p class="p-4 text-gray-500">Loading Rubric...</p>
+                        </div>
                         <div id="practiceAndAssess-content" class="tab-content">
                             <p class="p-4 text-gray-500">Loading assessments...</p>
                         </div>
