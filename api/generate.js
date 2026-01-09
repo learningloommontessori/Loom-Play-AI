@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     if (userError || !user) return res.status(401).json({ error: 'Invalid user' });
 
     // *** FIX: USE GEMINI 1.5 FLASH (Most Reliable Free Tier) ***
-    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
     
     // NEP 2020 & PRIMARY SCHOOL PROMPT
     const systemPrompt = `You are "Loom Thread," an expert primary school curriculum designer (Grades 1-5) aligned with India's NEP 2020 policies.
