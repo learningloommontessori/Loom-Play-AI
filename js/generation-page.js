@@ -9,12 +9,10 @@ let currentTopicName = "";
 document.addEventListener('DOMContentLoaded', async () => {
     supabase = await getSupabase();
     
-    // 1. Auth Check
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error || !session) { window.location.href = '/sign-in.html'; return; }
     currentUserSession = session;
 
-    // 2. Header Setup
     const user = session.user;
     const userName = user.user_metadata?.full_name || user.email;
     document.getElementById('welcome-message').textContent = `Welcome, ${userName.split(' ')[0]}!`;
@@ -22,7 +20,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await supabase.auth.signOut(); window.location.href = '/index.html';
     });
     
-    // 3. Get Inputs & Start
     currentTopicName = localStorage.getItem('currentTopic');
     const language = localStorage.getItem('generationLanguage') || 'English';
     const age = localStorage.getItem('selectedAge') || 'Class 1-5';
@@ -48,10 +45,7 @@ async function generateContent(topic, language, age, token) {
         if (!response.ok) throw new Error((await response.json()).error || 'Generation failed.');
 
         const result = await response.json();
-        
-        // Unwrap data (Handles both {lessonPlan: ...} and direct object)
         let lessonPlan = result.lessonPlan || result; 
-
         if (!lessonPlan || Object.keys(lessonPlan).length === 0) throw new Error("Received empty data.");
 
         currentLessonData = lessonPlan;
@@ -68,53 +62,37 @@ function populatePageUI(lessonPlan) {
     const loader = document.getElementById('loader');
     const mainContent = document.getElementById('main-content');
 
-    // --- GENERIC HANDLING FOR ALL TABS ---
-    // The new JSON structure is consistent: { TabKey: { SubTag: Content } }
-    // We iterate through all keys in the JSON and match them to HTML IDs.
-    
+    // 1. Generic Loop for all Text Tabs
     for (const tabKey in lessonPlan) {
-        // Skip metadata keys
         if (['id', 'user_id', 'created_at', 'topic', 'age', 'language', 'imagePrompt', 'success'].includes(tabKey)) continue;
 
-        // Find the matching container in HTML (e.g., 'lessonStarters-content')
         const container = document.getElementById(`${tabKey}-content`);
-        
         if (container) {
-            const tabData = lessonPlan[tabKey];
+            // Remove "Loading..." text immediately
+            container.innerHTML = ''; 
             
-            // Prepare HTML builders
+            const tabData = lessonPlan[tabKey];
             let tagsHtml = '<div class="flex flex-wrap gap-2 mb-6 border-b border-white/10 pb-4">';
             let contentHtml = '<div class="mt-4">';
             let isFirst = true;
 
-            // Handle Nested Objects (e.g. activeLearning -> handsOnExperiment)
             if (typeof tabData === 'object' && tabData !== null) {
                 for (const contentKey in tabData) {
-                    // Convert "handsOnExperiment" to "Hands On Experiment"
                     const title = contentKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                    
-                    // Create safe ID for DOM elements
                     const safeId = contentKey.replace(/[^a-zA-Z0-9]/g, '');
-                    
                     const activeClass = isFirst ? 'active-tag' : '';
                     const displayClass = isFirst ? 'block' : 'hidden';
 
-                    // 1. Create the Tag Button
                     tagsHtml += `<button class="glass-tag ${activeClass}" onclick="switchTag('${tabKey}', '${safeId}', this)">${title}</button>`;
                     
-                    // 2. Format the Body Content (Handles Strings and Arrays)
                     let bodyContent = formatBodyContent(tabData[contentKey]);
 
-                    // 3. Create the Content Block
                     contentHtml += `
                         <div id="${tabKey}-${safeId}" class="tag-content-item ${displayClass}">
                             <div class="flex justify-between items-start mb-3">
                                 <h3 class="text-xl font-bold text-white">${title}</h3>
-                                <button onclick="shareSingleItem('${title}', '${escapeHtml(bodyContent)}')" class="text-purple-400 hover:text-purple-200 transition-colors p-1" title="Share to Hub">
-                                    <span class="material-symbols-outlined">share</span>
-                                </button>
                             </div>
-                            <div class="prose prose-invert max-w-none text-gray-300 leading-relaxed">
+                            <div contenteditable="true" class="prose prose-invert max-w-none text-gray-300 leading-relaxed focus:outline-none focus:ring-1 focus:ring-purple-500 rounded p-1">
                                 ${bodyContent}
                             </div>
                         </div>
@@ -126,209 +104,111 @@ function populatePageUI(lessonPlan) {
         }
     }
 
+    // 2. IMAGE GENERATION (Pollinations AI)
+    const imageContainer = document.getElementById('generatedImage-content');
+    if (imageContainer) {
+        // Use smart prompt if available, else topic name
+        let prompt = lessonPlan.imagePrompt || currentTopicName + " educational illustration 3d pixar style";
+        generateFreeImage(prompt, 'generatedImage-content');
+    }
+
     if(loader) loader.style.display = 'none';
     if(mainContent) mainContent.classList.remove('hidden');
     setupTabNavigation();
 }
 
-// Helpers
 function formatBodyContent(content) {
-    // If it's a list (like in Resource Hub or Materials), make a bulleted list
     if (Array.isArray(content)) {
         return `<ul class="list-disc list-inside space-y-2 marker:text-purple-400">${content.map(item => `<li>${item}</li>`).join('')}</ul>`;
     }
-    // Convert newlines to breaks for readability
     if (typeof content === 'string') {
         return content.replace(/\n/g, '<br>');
     }
     return content;
 }
 
-function escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return '';
-    return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+// --- NEW: Free Image Generator ---
+function generateFreeImage(prompt, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = ''; // Clear loading text
+    const safePrompt = encodeURIComponent(prompt.substring(0, 300)); 
+    const randomSeed = Math.floor(Math.random() * 1000);
+    const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?width=1024&height=1024&seed=${randomSeed}&nologo=true`;
+
+    container.innerHTML = `
+        <div class="flex flex-col items-center gap-4 animate-fade-in">
+             <img src="${imageUrl}" alt="AI Generated" class="w-full max-w-md rounded-xl shadow-2xl border border-white/10" 
+                  onerror="this.src='https://placehold.co/600x400?text=Image+Generation+Failed'">
+             <a href="${imageUrl}" download="lesson_image.jpg" target="_blank" class="pro-glass-btn px-6 py-2 text-sm">Download Image</a>
+        </div>
+    `;
 }
 
-// Global functions (Attached to window for inline onclicks)
-window.switchTag = (tabKey, contentKey, clickedBtn) => {
-    const container = document.getElementById(`${tabKey}-content`);
-    // Reset all tags in this container
-    container.querySelectorAll('.glass-tag').forEach(btn => btn.classList.remove('active-tag'));
-    // Activate clicked tag
-    clickedBtn.classList.add('active-tag');
+// --- NEW: Worksheet Printer ---
+window.openPrintableWorksheet = () => {
+    if (!currentLessonData || !currentLessonData.practiceAndAssess) {
+        alert("No worksheet data found. Try generating a new lesson."); return;
+    }
+    const ws = currentLessonData.practiceAndAssess;
     
-    // Hide all content items
-    container.querySelectorAll('.tag-content-item').forEach(div => div.classList.add('hidden'));
+    const html = `
+    <html><head><title>Worksheet - ${currentTopicName}</title>
+    <style>
+        body{font-family:'Comic Sans MS',sans-serif;padding:40px;max-width:800px;margin:0 auto;} 
+        h1{border-bottom:2px solid #000;text-transform:uppercase;} 
+        .q{margin-bottom:20px;font-size:14px;}
+        .line{border-bottom:1px dotted #000;display:inline-block;width:100px;}
+    </style>
+    </head><body>
+        <h1>${currentTopicName} Worksheet</h1>
+        <p>Name: __________________________ Date: __________</p>
+        <br>
+        ${ws.worksheetFillBlanks ? `<h3>I. Fill in the Blanks</h3>${ws.worksheetFillBlanks.map((q,i)=>`<div class="q">${i+1}. ${q}</div>`).join('')}` : ''}
+        ${ws.worksheetTrueFalse ? `<h3>II. True or False</h3>${ws.worksheetTrueFalse.map((q,i)=>`<div class="q">${i+1}. ${q} [ T / F ]</div>`).join('')}` : ''}
+        ${ws.exitTickets ? `<h3>III. Quick Check</h3>${ws.exitTickets.map((q,i)=>`<div class="q">${i+1}. ${q}<br><br></div>`).join('')}` : ''}
+        <br><br><center><small>Generated by Loom Thread AI</small></center>
+    </body></html>`;
     
-    // Show target content
-    const target = document.getElementById(`${tabKey}-${contentKey}`);
-    if(target) target.classList.remove('hidden');
+    const win = window.open('','_blank');
+    win.document.write(html);
+    win.document.close();
+    // Allow images to load before print (optional)
+    setTimeout(() => { win.print(); }, 500);
 };
 
-window.shareSingleItem = async (title, contentHtml) => {
-    if(!confirm(`Share "${title}" to the Community Hub?`)) return;
-    
-    // Strip HTML for simple storage, or keep it if your Hub supports HTML
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = contentHtml;
-    const plainTextContent = tempDiv.textContent || tempDiv.innerText || "";
-
-    try {
-        const { error } = await supabase.from('CommunityHub').insert([{
-            user_id: currentUserSession.user.id,
-            user_name: currentUserSession.user.user_metadata?.full_name || 'A Loom Weaver',
-            topic: currentTopicName,
-            category: 'Shared Lesson Snippet',
-            content: `**${title}**\n\n${plainTextContent}`,
-            age: localStorage.getItem('selectedAge') || 'General'
-        }]);
-        if (error) throw error;
-        alert("Successfully shared to the Collective Loom!");
-    } catch (error) {
-        console.error("Share error:", error);
-        alert("Failed to share.");
-    }
+window.switchTag = (tabKey, contentKey, clickedBtn) => {
+    const container = document.getElementById(`${tabKey}-content`);
+    container.querySelectorAll('.glass-tag').forEach(btn => btn.classList.remove('active-tag'));
+    clickedBtn.classList.add('active-tag');
+    container.querySelectorAll('.tag-content-item').forEach(div => div.classList.add('hidden'));
+    document.getElementById(`${tabKey}-${contentKey}`).classList.remove('hidden');
 };
 
 function setupTabNavigation() {
-    const tabs = document.querySelectorAll('.glass-tab[data-tab]'); // Only main sidebar tabs
+    const tabs = document.querySelectorAll('.glass-tab[data-tab]');
     tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
-            
-            // Handle active state for Sidebar Tabs
             tabs.forEach(t => t.classList.remove('active-tab'));
             tab.classList.add('active-tab');
-            
-            // Handle visibility of Content Areas
             document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active-tab-content'));
-            const targetId = `${tab.dataset.tab}-content`;
-            const targetContent = document.getElementById(targetId);
-            if(targetContent) targetContent.classList.add('active-tab-content');
+            const target = document.getElementById(`${tab.dataset.tab}-content`);
+            if (target) target.classList.add('active-tab-content');
         });
     });
 }
 
 function setupGlobalButtons() {
-    const fullDownloadBtn = document.getElementById('download-plan-btn');
-    if (fullDownloadBtn) fullDownloadBtn.onclick = generateFullPDF;
-
-    const exportPdfBtn = document.getElementById('export-section-pdf');
-    const exportWordBtn = document.getElementById('export-section-word');
-    if (exportPdfBtn) exportPdfBtn.onclick = () => exportCurrentSection('pdf');
-    if (exportWordBtn) exportWordBtn.onclick = () => exportCurrentSection('word');
-}
-
-async function generateFullPDF() {
-    if (!window.jspdf || !currentLessonData) return alert("Libraries not ready.");
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let yPos = 20;
-
-    // Title
-    doc.setFontSize(22); doc.setTextColor(102, 51, 153);
-    doc.text(currentTopicName, 10, yPos); yPos += 15;
-    
-    doc.setFontSize(10); doc.setTextColor(100);
-    doc.text(`Generated by Loom Thread AI | Age: ${localStorage.getItem('selectedAge')}`, 10, yPos); yPos += 15;
-
-    doc.setFontSize(12); doc.setTextColor(0);
-
-    for (const [sectionKey, sectionData] of Object.entries(currentLessonData)) {
-        // Skip metadata
-        if (['id', 'user_id', 'created_at', 'imagePrompt', 'success', 'topic', 'language', 'age'].includes(sectionKey)) continue;
-
-        // Section Title (e.g., LESSON STARTERS)
-        const sectionTitle = sectionKey.replace(/([A-Z])/g, ' $1').toUpperCase();
-        
-        // Page Break check
-        if(yPos > 260) { doc.addPage(); yPos = 20; }
-        
-        doc.setFontSize(16); doc.setTextColor(102, 51, 153); // Purple
-        doc.text(sectionTitle, 10, yPos); yPos += 8;
-        doc.setLineWidth(0.5); doc.setDrawColor(200);
-        doc.line(10, yPos-2, 200, yPos-2); yPos += 10;
-
-        doc.setFontSize(12); doc.setTextColor(0);
-
-        if (typeof sectionData === 'object' && sectionData !== null) {
-             // Sub-sections (e.g. Story Hook, Wonder Question)
-             for (const [subKey, content] of Object.entries(sectionData)) {
-                 const subTitle = subKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                 
-                 // Sub-title bold
-                 doc.setFont(undefined, 'bold');
-                 if(yPos > 270) { doc.addPage(); yPos = 20; }
-                 doc.text(subTitle, 10, yPos); yPos += 6;
-                 doc.setFont(undefined, 'normal');
-
-                 // Content Body
-                 const bodyText = Array.isArray(content) ? content.map(i => `• ${i}`).join('\n') : content;
-                 
-                 const splitText = doc.splitTextToSize(String(bodyText), 180);
-                 if(yPos + (splitText.length * 6) > 275) { doc.addPage(); yPos = 20; }
-                 
-                 doc.text(splitText, 15, yPos);
-                 yPos += (splitText.length * 6) + 10;
-            }
-        }
-        yPos += 5;
-    }
-    doc.save(`${currentTopicName.replace(/\s+/g, '_')}_FullPlan.pdf`);
-}
-
-async function exportCurrentSection(format) {
-    const activeTab = document.querySelector('.glass-tab.active-tab[data-tab]'); // Ensure it's a sidebar tab
-    if (!activeTab) return alert("No section selected.");
-    
-    const tabId = activeTab.dataset.tab;
-    const container = document.getElementById(`${tabId}-content`);
-    
-    // Get the currently visible sub-tag content, OR all content if no sub-tags are hidden
-    const visibleContent = container.querySelector('.tag-content-item:not(.hidden)');
-    
-    // Fallback: If no single sub-tag is "active" (shouldn't happen), just take the whole container text
-    const contentEl = visibleContent || container;
-
-    if (!contentEl || contentEl.innerText.trim().length < 5) return alert("Section empty or loading.");
-    
-    // Clean up title
-    const mainTitle = activeTab.innerText.trim();
-    const subTitle = visibleContent ? visibleContent.querySelector('h3')?.innerText : '';
-    const fullTitle = subTitle ? `${mainTitle} - ${subTitle}` : mainTitle;
-
-    if (format === 'pdf') {
-        const doc = new window.jspdf.jsPDF();
-        doc.setFontSize(18); doc.setTextColor(102, 51, 153);
-        doc.text(fullTitle, 10, 20);
-        
-        doc.setFontSize(12); doc.setTextColor(0);
-        const splitText = doc.splitTextToSize(contentEl.innerText, 180);
-        doc.text(splitText, 10, 35);
-        
-        doc.save(`${fullTitle}.pdf`);
-    } else if (format === 'word') {
-        if (!window.htmlToDocx) return alert("Word library missing.");
-        
-        const html = `
-            <html>
-                <head><style>body { font-family: sans-serif; }</style></head>
-                <body>
-                    <h1 style="color: #663399;">${fullTitle}</h1>
-                    ${contentEl.innerHTML}
-                </body>
-            </html>`;
-            
-        try {
-            const blob = await window.htmlToDocx(html, null, { 
-                table: { row: { cantSplit: true } }, 
-                footer: true, 
-                pageNumber: true 
-            });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = `${fullTitle}.docx`;
-            link.click();
-        } catch (e) { console.error(e); alert("Word export failed."); }
+    // Inject the Worksheet button if it doesn't exist
+    const btnContainer = document.querySelector('.flex.space-x-4');
+    if (btnContainer && !document.getElementById('print-ws-btn')) {
+        const printBtn = document.createElement('button');
+        printBtn.id = 'print-ws-btn';
+        printBtn.className = 'pro-glass-btn flex items-center px-5 py-2.5 text-sm font-bold text-white hover:text-green-300 transition-colors border-green-500/30 bg-green-600/10';
+        printBtn.innerHTML = '<span class="material-symbols-outlined mr-2">print</span> Worksheet';
+        printBtn.onclick = window.openPrintableWorksheet;
+        btnContainer.prepend(printBtn);
     }
 }

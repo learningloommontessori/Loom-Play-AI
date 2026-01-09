@@ -1,7 +1,27 @@
 // api/generate.js
 import { createClient } from '@supabase/supabase-js';
 
+// Retry helper to handle Rate Limits (429) - Critical for Free Tier
+async function fetchWithRetry(url, options, retries = 3, backoff = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) return response;
+      if (response.status === 429) {
+        console.warn(`Attempt ${i + 1} failed (429). Retrying...`);
+        await new Promise(r => setTimeout(r, backoff));
+        backoff *= 2;
+        continue;
+      }
+      throw new Error(`API Error ${response.status}: ${await response.text()}`);
+    } catch (err) {
+      if (i === retries - 1) throw err;
+    }
+  }
+}
+
 export default async function handler(req, res) {
+  // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -24,66 +44,60 @@ export default async function handler(req, res) {
     const { data: { user }, error: userError } = await supabaseUserClient.auth.getUser(token);
     if (userError || !user) return res.status(401).json({ error: 'Invalid user' });
 
-    // 1. SWITCH TO GEMINI 2.5 FLASH (Better at complex JSON & Storytelling)
-    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
+    // *** FIX: USE GEMINI 1.5 FLASH (Most Reliable Free Tier) ***
+    const textApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
     
-    // 2. NEP 2020 ALIGNED PROMPT
+    // NEP 2020 & PRIMARY SCHOOL PROMPT
     const systemPrompt = `You are "Loom Thread," an expert primary school curriculum designer (Grades 1-5) aligned with India's NEP 2020 policies.
-    Topic: "${topic}", Target Audience: "${age}" (approx 6-11 years old), Language: "${language}".
+    Topic: "${topic}", Target Audience: "${age}", Language: "${language}".
 
-    KEY PEDAGOGY GUIDELINES:
-    1. **Magic Box (Toy-Based Pedagogy):** For activities, assume the teacher ONLY has standard classroom items (Chalk, Duster, Tiffin Boxes, Water Bottles, School Bags, Pencils). Do NOT ask for bought materials.
-    2. **Bhasha Sangam:** Always provide local language context for difficult English terms.
-    3. **FLN Focus:** Include quick drills for Foundational Literacy and Numeracy.
+    KEY GUIDELINES:
+    1. **Magic Box:** Use ONLY standard classroom items (Chalk, Duster, Bottle, Bag).
+    2. **Bhasha Sangam:** Provide local translations for key terms.
+    3. **Worksheet:** Provide content suitable for a printable page.
 
-    You MUST return ONLY valid JSON.
-    THE JSON STRUCTURE MUST BE EXACTLY THIS:
+    You MUST return ONLY valid JSON. Structure:
     {
-      "imagePrompt": "A highly detailed, cute, 3D Pixar-style text description of a scene that best represents this lesson's 'Story Hook'. Describe the characters, colors, and lighting. Do NOT include text in the image.",
-
+      "imagePrompt": "A highly detailed, cute, 3D Pixar-style scene description of the story hook. No text in image.",
+      
       "lessonStarters": {
-        "storyHook": "A short, creative original story (approx 100 words) to introduce the topic.",
-        "wonderQuestion": "A provocative 'Did you know?' or 'What if?' question to spark curiosity immediately.",
-        "realWorldConnection": "Explain how this topic connects to the child's daily life in an Indian context."
+        "storyHook": "Short creative story (100 words).",
+        "wonderQuestion": "Provocative question.",
+        "realWorldConnection": "Connection to daily life."
       },
       "magicBoxActivity": {
-        "activityName": "Name of the Toy-Based Activity",
-        "materialsUsed": "List ONLY standard classroom items used (e.g., Water Bottle, Chalk).",
-        "instructions": "Step-by-step guide to teaching the concept using these objects."
+        "activityName": "Name of Activity",
+        "materialsUsed": "List of standard items.",
+        "instructions": "Step-by-step guide."
       },
       "bhashaSangam": {
-         "bridgeVocabulary": [
-            "List 3-5 key English terms from the lesson and their translation in ${language} (or Hindi) with a simple cultural analogy."
-         ]
-      },
-      "flnBoosters": {
-         "literacyDrill": "A 5-minute rapid-fire game to boost reading/vocabulary related to the topic (NIPUN Bharat).",
-         "numeracyDrill": "A 5-minute mental math activity connecting the topic to numbers."
+         "bridgeVocabulary": ["List key English terms translated to ${language} (or Hindi) with analogies."]
       },
       "activeLearning": {
-        "groupGame": "A dynamic classroom game (charades, relay, etc.) that reinforces the concept.",
-        "artIntegration": "A drawing, craft, or model-making task related to the topic using waste material."
+        "groupGame": "Classroom game details.",
+        "artIntegration": "Craft activity."
       },
       "teachingGuide": {
-        "blackboardSummary": ["List of 3-5 key points exactly as they should be written on the board."],
-        "misconceptionCheck": "Common mistakes students make with this topic and how to correct them."
-      },
-      "holisticProgressCard": {
-         "observationRubric": [
-            "Create a qualitative rubric checklist. Example: 'Student participation: Rarely / Sometimes / Always'."
-         ]
+        "blackboardSummary": ["Point 1", "Point 2", "Point 3"],
+        "misconceptionCheck": "Common mistakes and corrections."
       },
       "practiceAndAssess": {
-        "worksheetIdeas": ["List 3 distinct ideas for worksheet questions (Fill in blanks, Match the following)."],
-        "exitTickets": ["List 3 quick questions to ask at the door."]
+        "worksheetFillBlanks": ["3 sentences with blanks."],
+        "worksheetTrueFalse": ["3 statements."],
+        "exitTickets": ["3 quick questions."]
       },
       "inclusiveCorner": {
-        "remedialSupport": "Specific tips for helping students who are struggling.",
-        "challengeTasks": "Advanced tasks for high-achieving students."
+        "remedialSupport": "Tips for struggling students.",
+        "challengeTasks": "Tips for advanced students."
+      },
+      "valuesAndSkills": { 
+        "valueOfTheDay": "Moral lesson.", 
+        "criticalThinkingQs": ["Open-ended question."]
       },
       "resourceHub": {
-          "bookList": ["List 2-3 age-appropriate book titles."],
-          "educationalVideos": ["List 2-3 specific search terms for educational YouTube videos."]
+          "bookList": ["Book 1", "Book 2"],
+          "educationalVideos": ["Video Search Term 1", "Video Search Term 2"],
+          "materialChecklist": ["Item 1", "Item 2"]
       }
     }`;
 
@@ -92,17 +106,12 @@ export default async function handler(req, res) {
         generationConfig: { responseMimeType: "application/json", temperature: 0.8 },
     };
     
-    const textApiResponse = await fetch(textApiUrl, {
+    const textApiResponse = await fetchWithRetry(textApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(textPayload),
     });
 
-    if (!textApiResponse.ok) {
-        const errText = await textApiResponse.text();
-        throw new Error(`Gemini API Error: ${errText}`);
-    }
-    
     const textData = await textApiResponse.json();
     const generatedText = textData.candidates?.[0]?.content?.parts?.[0]?.text;
     const lessonPlan = JSON.parse(generatedText.replace(/```json/g, '').replace(/```/g, '').trim());
@@ -113,7 +122,6 @@ export default async function handler(req, res) {
           user_id: user.id, topic: topic, content_json: lessonPlan, language: language, age: age
     }]);
 
-    // RETURN WRAPPED RESPONSE
     return res.status(200).json({ success: true, lessonPlan: lessonPlan });
 
   } catch (error) {
